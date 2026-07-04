@@ -12,6 +12,8 @@ learning vault.
 - `App/` contains the local tracker app.
 - `Learning.example/` contains a small synthetic demo workspace.
 - `Learning/` is reserved for a real private vault and is ignored by git.
+- `AGENTS.md` and `Learning.example/.system/prompts/` contain the AI operating
+  instructions and session workflows.
 
 For personal use, keep your private learning data in a separate private repo or
 local folder, then point the app at it:
@@ -31,3 +33,10 @@ fresh public clone.
 
 Do not commit real study logs, PDFs, scraped source text, clippings, Obsidian
 state, or personal notes to the public repo.
+
+## AI Workflow
+
+AI agents should read `AGENTS.md`, then the relevant workspace context and prompt
+template before changing learning files. In a fresh public clone, those live
+under `Learning.example/.system/`; in a real local setup, they usually live under
+the private `Learning/.system/` vault.
