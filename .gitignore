@@ -1,0 +1,34 @@
+# macOS AppleDouble metadata files
+._*
+
+# macOS Finder metadata
+.DS_Store
+
+# Private learning vault
+#
+# The public repo should use Learning.example/. Keep real study data in a
+# private repo or local vault mounted as ./Learning, or point the app at it with
+# LEARNING_WORKSPACE.
+Learning/
+
+# Local environment / machine-specific config
+.env
+.env.local
+*.local.json
+
+# Node dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+.vite/
+
+# Editor / IDE
+.idea/
+*.swp
+
+# Claude Code local state
+.claude/worktrees/
+.claude/settings.local.json

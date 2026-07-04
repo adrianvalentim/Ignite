@@ -1,0 +1,218 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------
+ * Design tokens — dark academia × research lab.
+ * Tailwind v4 reads @theme as utility-class generators (bg-bg, text-ink, …).
+ * Default values below are the *dark* palette; the daylight palette
+ * overrides the same custom properties under :root[data-theme="light"],
+ * so every utility class automatically picks up the right colour.
+ * ------------------------------------------------------------------ */
+@theme {
+  --color-bg: #15110d;
+  --color-bg-elev: #1c1612;
+  --color-bg-deep: #0f0c09;
+  --color-paper: #f3ead6;
+  --color-paper-deep: #e9dec3;
+  --color-ink: #e8dfc8;
+  --color-ink-soft: #b6ac95;
+  --color-ink-dim: #6b5d4d;
+  --color-ink-paper: #3a2f24;
+  --color-line: #2a221b;
+  --color-line-strong: #3a2f24;
+  --color-amber: #c9933a;
+  --color-amber-soft: #8a6428;
+  --color-green: #5e7a3d;
+  --color-green-soft: #3f5128;
+  --color-slate-blue: #5b7a8c;
+  --color-slate-blue-soft: #2e4554;
+  --color-rust: #a55a3b;
+
+  --font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
+  --font-body: "Inter", -apple-system, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+:root {
+  --ease-smooth: cubic-bezier(0.32, 0.72, 0, 1);
+  --shadow-card: 0 1px 0 0 rgba(255, 233, 184, 0.04) inset,
+    0 14px 28px -16px rgba(0, 0, 0, 0.7),
+    0 4px 8px -4px rgba(0, 0, 0, 0.5);
+  --shadow-card-hover: 0 1px 0 0 rgba(255, 233, 184, 0.08) inset,
+    0 22px 36px -18px rgba(0, 0, 0, 0.75),
+    0 6px 14px -6px rgba(0, 0, 0, 0.55);
+  --backdrop: rgba(8, 6, 4, 0.6);
+  --grain-blend: overlay;
+  --grain-opacity: 0.35;
+  --vignette-top: rgba(201, 147, 58, 0.06);
+  --vignette-bottom: rgba(0, 0, 0, 0.45);
+  color-scheme: dark;
+}
+
+/* -------- Daylight palette --------------------------------------- */
+:root[data-theme="light"] {
+  --color-bg: #ede2c4;
+  --color-bg-elev: #f3ead6;
+  --color-bg-deep: #e1d3b0;
+  --color-paper: #faf3df;
+  --color-paper-deep: #ede2c4;
+  --color-ink: #2a1f15;
+  --color-ink-soft: #5a4a36;
+  --color-ink-dim: #8b7a60;
+  --color-ink-paper: #2a1f15;
+  --color-line: #d6c7a4;
+  --color-line-strong: #b8a47e;
+  --color-amber: #9a6a1f;
+  --color-amber-soft: #c9933a;
+  --color-green: #4a6230;
+  --color-green-soft: #5e7a3d;
+  --color-slate-blue: #3f5c70;
+  --color-slate-blue-soft: #5b7a8c;
+  --color-rust: #8c4a2e;
+
+  --shadow-card: 0 1px 0 0 rgba(255, 248, 224, 0.6) inset,
+    0 14px 28px -16px rgba(58, 30, 12, 0.18),
+    0 4px 8px -4px rgba(58, 30, 12, 0.10);
+  --shadow-card-hover: 0 1px 0 0 rgba(255, 248, 224, 0.7) inset,
+    0 22px 36px -18px rgba(58, 30, 12, 0.22),
+    0 6px 14px -6px rgba(58, 30, 12, 0.14);
+  --backdrop: rgba(48, 34, 16, 0.22);
+  --grain-blend: multiply;
+  --grain-opacity: 0.18;
+  --vignette-top: rgba(201, 147, 58, 0.10);
+  --vignette-bottom: rgba(58, 30, 12, 0.08);
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* A faint, slow vignette so the canvas reads as "room" rather than "screen". */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 80% 60% at 50% 0%,
+      var(--vignette-top),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 120% 80% at 50% 100%,
+      var(--vignette-bottom),
+      transparent 60%
+    );
+  z-index: 0;
+  transition: background 320ms var(--ease-smooth);
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+/* Typography helpers ------------------------------------------------ */
+.font-display {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  font-variation-settings: "SOFT" 50, "WONK" 0;
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Scrollbar ---------------------------------------------------------- */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-line-strong);
+  border-radius: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Subtle paper grain — used both on book covers and on the paper panel.
+ * Pure CSS so we ship no images.
+ */
+.grain {
+  position: relative;
+  isolation: isolate;
+}
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: var(--grain-blend);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' seed='3'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.45 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-size: 160px 160px;
+}
+/* Book covers always behave like physical objects regardless of room
+ * lighting, so the grain on covers keeps the overlay treatment. */
+.grain-cover::after {
+  mix-blend-mode: overlay;
+  opacity: 0.35;
+}
+.grain-paper::after {
+  mix-blend-mode: multiply;
+  opacity: 0.22;
+}
+
+/* Smooth theme transition on the canvas. */
+body,
+.theme-transition,
+.theme-transition * {
+  transition:
+    background-color 320ms var(--ease-smooth),
+    color 320ms var(--ease-smooth),
+    border-color 320ms var(--ease-smooth);
+}
+
+/* Focus rings (keyboard only) -------------------------------------- */
+:focus-visible {
+  outline: 2px solid var(--color-amber);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* A signature fade-in that view transitions use. */
+@keyframes fade-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-rise {
+  animation: fade-rise 280ms var(--ease-smooth) both;
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+.pulse-soft {
+  animation: pulse-soft 3.6s var(--ease-smooth) infinite;
+}

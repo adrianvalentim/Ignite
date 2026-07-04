@@ -1,0 +1,14 @@
+{
+  "name": "effortful-learning-app",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Local viewer for the Effortful Learning workspace.",
+  "scripts": {
+    "install:all": "pnpm -C backend install && pnpm -C frontend install",
+    "dev": "concurrently -n bk,fe -c yellow,cyan \"pnpm -C backend dev\" \"pnpm -C frontend dev\"",
+    "build": "pnpm -C frontend build"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

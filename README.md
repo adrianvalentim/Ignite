@@ -1,0 +1,33 @@
+# Effortful Learning System
+
+Effortful Learning is a filesystem-first study system for turning books into
+durable understanding through interrogation, reconstruction, cards, synthesis,
+and review.
+
+## Public and Private Data
+
+This repository is designed to be shareable without publishing a personal
+learning vault.
+
+- `App/` contains the local tracker app.
+- `Learning.example/` contains a small synthetic demo workspace.
+- `Learning/` is reserved for a real private vault and is ignored by git.
+
+For personal use, keep your private learning data in a separate private repo or
+local folder, then point the app at it:
+
+```bash
+LEARNING_WORKSPACE="/path/to/private/Learning" pnpm -C App dev
+```
+
+If `LEARNING_WORKSPACE` is not set, the backend looks for `Learning/` first and
+then falls back to `Learning.example/`.
+
+## Demo Data
+
+The example workspace uses synthetic books, notes, logs, and card drafts. It is
+meant to show the file format and give the app something safe to render in a
+fresh public clone.
+
+Do not commit real study logs, PDFs, scraped source text, clippings, Obsidian
+state, or personal notes to the public repo.

@@ -1,0 +1,6 @@
+{
+  "workspace_path": ".",
+  "app_port": 3333,
+  "theme": "dark",
+  "default_view": "library"
+}
