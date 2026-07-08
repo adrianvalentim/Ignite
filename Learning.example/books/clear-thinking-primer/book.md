@@ -13,7 +13,7 @@ segments:
     summary: "Separating what is asserted from why it might be true."
     stage: complete
     difficulty: 0.2
-    sessions: 2
+    sessions: 3
   - id: "02"
     slug: hidden-assumptions
     title: "Hidden Assumptions"

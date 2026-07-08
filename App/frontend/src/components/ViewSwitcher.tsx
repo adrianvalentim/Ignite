@@ -3,15 +3,18 @@ import type { View } from "../lib/view";
 interface Props {
   view: View;
   onChange: (next: View) => void;
+  onSearch: () => void;
 }
 
 const VIEWS: { id: View; label: string }[] = [
+  { id: "today", label: "Today" },
   { id: "library", label: "Library" },
   { id: "kanban", label: "Board" },
   { id: "timeline", label: "Chronicle" },
+  { id: "stats", label: "Ledger" },
 ];
 
-export function ViewSwitcher({ view, onChange }: Props) {
+export function ViewSwitcher({ view, onChange, onSearch }: Props) {
   return (
     <div
       className="fixed left-6 top-6 z-[60] inline-flex items-center gap-0 rounded-full border px-1 py-1 font-mono text-[10.5px] uppercase tracking-[0.22em]"
@@ -42,6 +45,37 @@ export function ViewSwitcher({ view, onChange }: Props) {
           </button>
         );
       })}
+
+      <span
+        aria-hidden
+        className="mx-1 h-4 w-px"
+        style={{ background: "var(--color-line-strong)" }}
+      />
+      <button
+        type="button"
+        onClick={onSearch}
+        aria-label="Search the workspace (⌘K)"
+        title="Search · ⌘K"
+        className="flex items-center gap-1.5 rounded-full px-2.5 py-1 transition-colors duration-200"
+        style={{
+          color: "var(--color-ink-soft)",
+          transitionTimingFunction: "var(--ease-smooth)",
+        }}
+      >
+        <svg width="11" height="11" viewBox="0 0 14 14" fill="none" aria-hidden>
+          <circle cx="6" cy="6" r="4.2" stroke="currentColor" strokeWidth="1.3" />
+          <line
+            x1="9.2"
+            y1="9.2"
+            x2="12.4"
+            y2="12.4"
+            stroke="currentColor"
+            strokeWidth="1.3"
+            strokeLinecap="round"
+          />
+        </svg>
+        <span className="hidden sm:inline">⌘K</span>
+      </button>
     </div>
   );
 }

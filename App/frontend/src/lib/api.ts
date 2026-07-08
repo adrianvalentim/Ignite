@@ -1,4 +1,12 @@
-import type { BookDetail, BookSummary, SessionLog } from "../../../shared/types";
+import type {
+  BookDetail,
+  BookSummary,
+  LogDetail,
+  SearchResult,
+  SessionLog,
+  StatsPayload,
+  TodayPayload,
+} from "../../../shared/types";
 
 const base = ""; // proxied through Vite at /api/*
 
@@ -13,6 +21,14 @@ export const api = {
   book: (slug: string) => get<BookDetail>(`/api/books/${slug}`),
   timeline: () =>
     get<{ logs: SessionLog[] }>("/api/timeline").then((r) => r.logs),
+  today: () => get<TodayPayload>("/api/today"),
+  stats: () => get<StatsPayload>("/api/stats"),
+  log: (book: string, file: string) =>
+    get<LogDetail>(`/api/books/${book}/logs/${encodeURIComponent(file)}`),
+  search: (q: string) =>
+    get<{ results: SearchResult[] }>(
+      `/api/search?q=${encodeURIComponent(q)}`,
+    ).then((r) => r.results),
 };
 
 // Server-sent events: silent live reload when the workspace changes on disk.

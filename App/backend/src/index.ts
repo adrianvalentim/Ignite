@@ -7,7 +7,11 @@ import {
   readAllBooks,
   readAllLogs,
   readBookDetail,
+  readLogDetail,
 } from "./workspace.js";
+import { buildToday } from "./schedule.js";
+import { buildStats } from "./stats.js";
+import { searchWorkspace } from "./search.js";
 
 const PORT = Number(process.env.PORT) || 3333;
 
@@ -36,6 +40,30 @@ app.get<{ Params: { slug: string } }>("/api/books/:slug", async (req, reply) => 
 app.get("/api/timeline", async () => {
   const logs = await readAllLogs(config.workspace_path);
   return { logs };
+});
+
+app.get<{ Params: { slug: string; file: string } }>(
+  "/api/books/:slug/logs/:file",
+  async (req, reply) => {
+    const log = await readLogDetail(
+      config.workspace_path,
+      req.params.slug,
+      req.params.file,
+    );
+    if (!log) return reply.code(404).send({ error: "not found" });
+    return log;
+  },
+);
+
+app.get("/api/today", async () => buildToday(config.workspace_path));
+
+app.get("/api/stats", async () => buildStats(config.workspace_path));
+
+app.get<{ Querystring: { q?: string } }>("/api/search", async (req) => {
+  const q = (req.query.q ?? "").trim();
+  if (!q) return { results: [] };
+  const results = await searchWorkspace(config.workspace_path, q);
+  return { results };
 });
 
 // Filesystem-change stream via Server-Sent Events.

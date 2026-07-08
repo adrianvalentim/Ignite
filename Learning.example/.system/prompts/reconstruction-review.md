@@ -34,7 +34,9 @@ identified positively.
 
 ## After the Review
 
-1. Write a session log to `logs/{date}-reconstruction-review-{segment-slug}.md`.
+1. Write a session log to `logs/{date}-reconstruction-review-{segment-slug}.md`,
+   including an `outcomes` map in the frontmatter scoring the reconstruction's
+   major concepts from 0.0 to 1.0 (see `session-log-format.md`).
 2. Update the segment's `stage` to `reconstructed` in `book.md` if not already
    set.
 3. Revise difficulty ratings in `book.md` based on reconstruction quality.

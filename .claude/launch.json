@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "backend",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["-C", "App/backend", "dev"],
+      "port": 3333
+    },
+    {
+      "name": "app",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["-C", "App/frontend", "dev"],
+      "port": 5173
+    }
+  ]
+}

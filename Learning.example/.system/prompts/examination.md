@@ -41,7 +41,9 @@ the book as a whole.
 
 ## After the Examination
 
-1. Write a comprehensive examination log to `logs/{date}-examination-final.md`.
+1. Write a comprehensive examination log to `logs/{date}-examination-final.md`,
+   including an `outcomes` map in the frontmatter scoring the examined concepts
+   from 0.0 to 1.0 (see `session-log-format.md`).
 2. Set the book's `status` to `completed` in `book.md` if the learner
    demonstrated sufficient understanding.
 3. Update the final summary in `book.md`.

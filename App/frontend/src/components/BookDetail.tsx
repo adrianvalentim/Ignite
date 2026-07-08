@@ -8,9 +8,10 @@ import { SegmentExpansion } from "./SegmentExpansion";
 interface Props {
   slug: string;
   onClose: () => void;
+  onOpenLog: (book: string, file: string) => void;
 }
 
-export function BookDetail({ slug, onClose }: Props) {
+export function BookDetail({ slug, onClose, onOpenLog }: Props) {
   const [book, setBook] = useState<BookDetailT | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,7 +50,7 @@ export function BookDetail({ slug, onClose }: Props) {
       >
         {!book && !error && <Loading />}
         {error && <ErrorState message={error} />}
-        {book && <BookBody book={book} onClose={onClose} />}
+        {book && <BookBody book={book} onClose={onClose} onOpenLog={onOpenLog} />}
       </aside>
     </div>
   );
@@ -74,7 +75,15 @@ function ErrorState({ message }: { message: string }) {
   );
 }
 
-function BookBody({ book, onClose }: { book: BookDetailT; onClose: () => void }) {
+function BookBody({
+  book,
+  onClose,
+  onOpenLog,
+}: {
+  book: BookDetailT;
+  onClose: () => void;
+  onOpenLog: (book: string, file: string) => void;
+}) {
   const style = coverFor(book.slug);
   const completed = book.progress.completed;
   const total = book.progress.total || book.segments.length;
@@ -191,22 +200,38 @@ function BookBody({ book, onClose }: { book: BookDetailT; onClose: () => void })
       {book.logs.length > 0 && (
         <Section title="Recent sessions" subtitle="What the AI has recorded.">
           <ol className="space-y-4">
-            {book.logs.slice(0, 6).map((log) => (
-              <li key={log.path} className="flex gap-5">
-                <div className="font-mono text-[11px] text-ink-dim w-24 shrink-0 pt-0.5">
-                  {log.date}
-                </div>
-                <div className="min-w-0">
-                  <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-soft">
-                    {log.type}
-                    {log.segment ? ` · ${log.segment}` : ""}
-                  </div>
-                  <p className="mt-1 text-[14px] leading-relaxed text-ink">
-                    {log.summary || <span className="text-ink-dim italic">No summary.</span>}
-                  </p>
-                </div>
-              </li>
-            ))}
+            {book.logs.slice(0, 6).map((log) => {
+              const file = log.path.split("/").pop();
+              return (
+                <li key={log.path}>
+                  <button
+                    type="button"
+                    onClick={() => file && onOpenLog(book.slug, file)}
+                    className="group flex w-full gap-5 text-left"
+                    title="Read the full log"
+                  >
+                    <div className="font-mono text-[11px] text-ink-dim w-24 shrink-0 pt-0.5">
+                      {log.date}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-soft">
+                        {log.type}
+                        {log.segment ? ` · ${log.segment}` : ""}
+                        <span
+                          className="ml-2 opacity-0 transition-opacity group-hover:opacity-100"
+                          style={{ color: "var(--color-amber)" }}
+                        >
+                          read →
+                        </span>
+                      </div>
+                      <p className="mt-1 text-[14px] leading-relaxed text-ink">
+                        {log.summary || <span className="text-ink-dim italic">No summary.</span>}
+                      </p>
+                    </div>
+                  </button>
+                </li>
+              );
+            })}
           </ol>
         </Section>
       )}

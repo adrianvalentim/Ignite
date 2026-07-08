@@ -4,6 +4,9 @@ book: clear-thinking-primer
 segment: claims-and-reasons
 type: interrogation
 duration_approx: 35m
+outcomes:
+  claims-vs-reasons: 0.8
+  relevance-vs-support: 0.55
 ---
 
 # Session Summary

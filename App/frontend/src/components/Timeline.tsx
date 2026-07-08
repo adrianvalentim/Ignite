@@ -5,6 +5,7 @@ interface Props {
   books: BookSummary[];
   logs: SessionLog[];
   onOpen: (slug: string) => void;
+  onOpenLog: (book: string, file: string) => void;
 }
 
 const TYPE_LABEL: Record<string, string> = {
@@ -76,7 +77,7 @@ function computeStats(books: BookSummary[], logs: SessionLog[]): Stats {
   };
 }
 
-export function Timeline({ books, logs, onOpen }: Props) {
+export function Timeline({ books, logs, onOpen, onOpenLog }: Props) {
   const bookBySlug = useMemo(() => {
     const m: Record<string, BookSummary> = {};
     for (const b of books) m[b.slug] = b;
@@ -115,6 +116,7 @@ export function Timeline({ books, logs, onOpen }: Props) {
               group={group}
               bookBySlug={bookBySlug}
               onOpen={onOpen}
+              onOpenLog={onOpenLog}
             />
           ))}
         </div>
@@ -174,10 +176,12 @@ function MonthSection({
   group,
   bookBySlug,
   onOpen,
+  onOpenLog,
 }: {
   group: MonthGroup;
   bookBySlug: Record<string, BookSummary>;
   onOpen: (slug: string) => void;
+  onOpenLog: (book: string, file: string) => void;
 }) {
   return (
     <section>
@@ -209,6 +213,7 @@ function MonthSection({
             book={bookBySlug[log.book]}
             isLast={i === group.entries.length - 1}
             onOpen={() => onOpen(log.book)}
+            onOpenLog={onOpenLog}
           />
         ))}
       </ol>
@@ -221,12 +226,15 @@ function TimelineEntry({
   book,
   isLast,
   onOpen,
+  onOpenLog,
 }: {
   log: SessionLog;
   book: BookSummary | undefined;
   isLast: boolean;
   onOpen: () => void;
+  onOpenLog: (book: string, file: string) => void;
 }) {
+  const logFile = log.path.split("/").pop();
   const typeColor = TYPE_COLOR[log.type] ?? "var(--color-ink-soft)";
   const typeLabel = TYPE_LABEL[log.type] ?? capitalise(log.type);
   const day = formatDay(log.date);
@@ -305,6 +313,19 @@ function TimelineEntry({
           >
             {cleanSummary(log.summary)}
           </p>
+        )}
+
+        {logFile && (
+          <button
+            type="button"
+            onClick={() => onOpenLog(log.book, logFile)}
+            className="mt-2 font-mono text-[10.5px] uppercase tracking-[0.22em] transition-colors"
+            style={{ color: "var(--color-ink-dim)" }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-amber)")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--color-ink-dim)")}
+          >
+            Read the log →
+          </button>
         )}
       </div>
     </li>

@@ -13,7 +13,7 @@ segments:
     summary: "How outputs return as inputs."
     stage: reconstructed
     difficulty: 0.4
-    sessions: 2
+    sessions: 3
   - id: "02"
     slug: delays
     title: "Delays"
