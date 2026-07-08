@@ -1,12 +1,14 @@
-export type View = "library" | "kanban" | "timeline";
+export type View = "today" | "library" | "kanban" | "timeline" | "stats";
 
 const STORAGE_KEY = "effortful-view";
 
+const VALID_VIEWS: View[] = ["today", "library", "kanban", "timeline", "stats"];
+
 export function readInitialView(): View {
-  if (typeof window === "undefined") return "library";
+  if (typeof window === "undefined") return "today";
   const stored = localStorage.getItem(STORAGE_KEY) as View | null;
-  if (stored === "kanban" || stored === "timeline") return stored;
-  return "library";
+  if (stored && VALID_VIEWS.includes(stored)) return stored;
+  return "today";
 }
 
 export function persistView(view: View) {

@@ -4,6 +4,9 @@ book: systems-and-feedback
 segment: loops
 type: reconstruction-review
 duration_approx: 40m
+outcomes:
+  reinforcing-loops: 0.75
+  balancing-loops: 0.5
 ---
 
 # Session Summary

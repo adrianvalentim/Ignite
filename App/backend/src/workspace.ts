@@ -8,6 +8,7 @@ import type {
   BookDetail,
   BookMeta,
   BookSummary,
+  LogDetail,
   Segment,
   SegmentStage,
   SessionLog,
@@ -117,6 +118,17 @@ function normaliseDifficultyMap(raw: unknown): Record<string, number> {
   return out;
 }
 
+function normaliseOutcomes(raw: unknown): Record<string, number> | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const out: Record<string, number> = {};
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof v === "number" && Number.isFinite(v)) {
+      out[k] = Math.min(1, Math.max(0, v));
+    }
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
 function normaliseConnections(raw: unknown): BookMeta["connections"] {
   if (!Array.isArray(raw)) return [];
   return raw
@@ -189,6 +201,7 @@ async function readSessionLogs(bookDir: string, slug: string): Promise<SessionLo
         duration_approx:
           typeof data.duration_approx === "string" ? data.duration_approx : undefined,
         summary: md.content.trim().slice(0, 400),
+        outcomes: normaliseOutcomes(data.outcomes),
       });
     }
     return logs.sort((a, b) => (a.date < b.date ? 1 : -1));
@@ -254,6 +267,43 @@ export async function readAllBooks(workspace: string): Promise<BookSummary[]> {
     if (s) out.push(s);
   }
   return out;
+}
+
+const SLUG_RE = /^[a-z0-9][a-z0-9-]*$/i;
+const LOG_FILE_RE = /^[a-z0-9][a-z0-9._-]*\.md$/i;
+
+export async function readLogDetail(
+  workspace: string,
+  slug: string,
+  file: string,
+): Promise<LogDetail | null> {
+  // Both parts come straight from the URL — refuse anything that could
+  // escape the book's logs directory.
+  if (!SLUG_RE.test(slug) || !LOG_FILE_RE.test(file) || file.includes("..")) {
+    return null;
+  }
+  const logsDir = path.join(workspace, "books", slug, "logs");
+  const absPath = path.resolve(logsDir, file);
+  if (!absPath.startsWith(path.resolve(logsDir) + path.sep)) return null;
+
+  const md = await readMarkdown(absPath);
+  if (!md) return null;
+  const data = md.data;
+  const body_html = await marked.parse(md.content);
+  const bookMd = await readMarkdown(path.join(workspace, "books", slug, "book.md"));
+  return {
+    path: `logs/${file}`,
+    date: asString(data.date),
+    book: asString(data.book, slug),
+    book_title: bookMd ? asString(bookMd.data.title, slug) : undefined,
+    segment: typeof data.segment === "string" ? data.segment : undefined,
+    type: asString(data.type, "session"),
+    duration_approx:
+      typeof data.duration_approx === "string" ? data.duration_approx : undefined,
+    summary: md.content.trim().slice(0, 400),
+    outcomes: normaliseOutcomes(data.outcomes),
+    body_html: typeof body_html === "string" ? body_html : "",
+  };
 }
 
 export async function readAllLogs(workspace: string): Promise<SessionLog[]> {

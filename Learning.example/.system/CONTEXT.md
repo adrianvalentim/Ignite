@@ -29,4 +29,14 @@ Segments move through this pipeline:
 5. `carded`
 6. `complete`
 
+## The Review Cycle
+
+`complete` is not terminal. Memory fades, so completed segments cycle back as
+delayed free-recall sessions (see `prompts/recall.md`). Nothing writes a
+schedule to disk: the tracker app derives each segment's next review date from
+its session logs — how many retrieval sessions it has had, how difficult it is
+rated, and how the last recall actually went (the `outcomes` scores in log
+frontmatter). A recall session logs `type: recall` and does not change the
+segment's `stage`.
+
 This example workspace uses synthetic material only.

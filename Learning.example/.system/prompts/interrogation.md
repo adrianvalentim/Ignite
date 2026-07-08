@@ -39,7 +39,10 @@ follow-ups, not approval.
 
 ## After the Conversation
 
-1. Write a session log to `logs/{date}-interrogation-{segment-slug}.md`.
+1. Write a session log to `logs/{date}-interrogation-{segment-slug}.md`,
+   including an `outcomes` map in the frontmatter scoring each probed concept
+   from 0.0 to 1.0 (see `session-log-format.md`). The review scheduler reads
+   these scores.
 2. Update the segment's `stage` to `interrogated` in `book.md` frontmatter.
 3. Update the `difficulty_map` in `book.md` with any new or revised ratings.
 4. Update the "Current State" section of `book.md`.
