@@ -25,6 +25,23 @@ LEARNING_WORKSPACE="/path/to/private/Learning" pnpm -C App dev
 If `LEARNING_WORKSPACE` is not set, the backend looks for `Learning/` first and
 then falls back to `Learning.example/`.
 
+## One App, Separate Vault
+
+Maintain application improvements in this public repository. A private
+learning repository should contain the real vault, not another maintained copy
+of `App/`.
+
+Run this checkout against a private vault with:
+
+```bash
+cd /path/to/effortful-learning-system
+LEARNING_WORKSPACE="/path/to/private-repo/Learning" pnpm -C App dev
+```
+
+The app reads the external vault directly, so a local app improvement applies
+to personal use immediately. Other users receive it after the public change is
+committed, pushed, and pulled into their checkout.
+
 ## Demo Data
 
 The example workspace uses synthetic books, notes, logs, and card drafts. It is
