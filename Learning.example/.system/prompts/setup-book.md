@@ -2,39 +2,39 @@
 
 ## Role
 
-You are helping the learner set up a new book for processing. Your job is to
-segment the book into conceptual units and create the workspace structure.
+Help the learner turn a book into coherent conceptual units and initialize its
+workspace. Conceptual structure matters more than equal segment length.
 
-## Context to Load
+## Context to Load Now
 
-1. `.system/CONTEXT.md`.
-2. The book's full text, if available.
-3. If full text is not available, the table of contents, chapter summaries, and
-   any learner notes about goals for the book.
-4. Existing `cross-book/connections.md` if the learner mentions related books or
-   themes.
+1. `.system/CONTEXT.md` and `.system/ROUTER.md`.
+2. The full learner-provided text when available.
+3. Otherwise, the table of contents, chapter summaries, and learner goals.
+4. Existing cross-book connections only when the learner identifies related
+   books or themes.
 
-## Steps
+Do not inspect application code. Do not load the vault write contract until the
+learner has approved the proposed segmentation and file creation is imminent.
 
-1. Read the book's full text or table of contents plus chapter summaries.
-2. Propose a segmentation into conceptual units. Each unit should contain one
-   major idea or argument and be digestible in one reading session.
-3. For each segment, provide:
+## Segmentation
+
+1. Build a compact model of the book's overall argument and concept
+   dependencies.
+2. Propose units that each contain one major idea, argument, or mechanism and
+   are digestible in one learning session.
+3. For each proposed segment provide:
    - ID.
    - Short title.
-   - Slug.
+   - Lowercase ASCII slug.
    - One-sentence summary.
-   - Source range, such as chapter, section, or page range.
-4. Present the segmentation to the learner for review and adjustment.
-5. Once confirmed, create the full book folder structure:
-   - `book.md` with metadata and segment list.
-   - `source/` with each segment as a numbered markdown file.
-   - Empty `logs/`, `reconstructions/`, and `cards/` folders.
-   - Empty `thesis.md` and `essay.md` files.
-6. If the source material is in PDF or EPUB, extract text and convert it to
-   clean markdown before placing it in `source/`.
+   - Source range such as chapter, section, or pages.
+   - Important dependencies on earlier segments.
+4. Present the segmentation for learner review. Revise it before creating
+   files.
 
-## Book Folder Structure
+## Creation
+
+After approval, load `../protocols/vault-contract.md`. Create:
 
 ```text
 books/{book-slug}/
@@ -49,14 +49,18 @@ books/{book-slug}/
 `-- essay.md
 ```
 
-## book.md Template
+If the learner supplied a PDF or EPUB, extract and clean the text before placing
+it in `source/`. Respect copyright restrictions and avoid reproducing large
+external excerpts in responses.
+
+## `book.md` Template
 
 ```markdown
 ---
 title: "Book Title"
 author: "Author Name"
 slug: book-title-author
-date_added: 2026-01-01
+date_added: YYYY-MM-DD
 status: queued
 total_segments: 0
 segments: []
@@ -65,6 +69,19 @@ connections: []
 ---
 
 # Book Title - Author Name
+
+## Book Map
+
+**Overall argument:** A compact account of what the book is trying to establish.
+
+**Conceptual progression:**
+
+- Segment 01 establishes ...
+- Segment 02 depends on it by ...
+
+**Key dependencies:**
+
+- Concept B depends on concept A because ...
 
 ## Current State
 
@@ -79,11 +96,13 @@ Queued for setup.
 - None yet.
 ```
 
+The Book Map is a compact structural orientation, not a running session log.
+Current State and Difficulties carry changing learning evidence.
+
 ## Rules
 
-- Do not modify source segments after setup unless the learner explicitly asks
-  for a correction.
-- Prefer conceptual coherence over equal segment length.
+- Do not modify source segments after setup without an explicit correction
+  request.
+- Preserve the learner's goals when choosing conceptual boundaries.
 - Keep slugs lowercase, ASCII, and hyphenated.
-- If copyright restrictions apply, use the learner-provided local text and avoid
-  reproducing large external excerpts in responses.
+- Do not create files until the learner approves the segmentation.

@@ -53,7 +53,29 @@ state, or personal notes to the public repo.
 
 ## AI Workflow
 
-AI agents should read `AGENTS.md`, then the relevant workspace context and prompt
-template before changing learning files. In a fresh public clone, those live
-under `Learning.example/.system/`; in a real local setup, they usually live under
-the private `Learning/.system/` vault.
+AI agents use progressive disclosure. They read `AGENTS.md`, the active
+workspace's compact context and session router, and then only the prompt and
+evidence required for the current learning phase. Closing formats and vault
+write rules are loaded after the learning conversation, not while the agent is
+choosing questions.
+
+In a fresh public clone, those instructions live under
+`Learning.example/.system/`; in a real local setup, they usually live under the
+private `Learning/.system/` vault. During a learning session, agents should not
+inspect `App/`: the tracker is only a read-only consumer of valid vault files.
+
+To preview the files needed for a session without loading their contents into
+the agent's working context:
+
+```bash
+node scripts/learning-context.mjs \
+  --workspace Learning.example \
+  --book clear-thinking-primer \
+  --segment claims-and-reasons \
+  --mode interrogation
+```
+
+For an external vault that has not yet copied the router and protocols, the
+planner automatically uses its workspace-specific `CONTEXT.md` together with
+the generic instruction bundle in `Learning.example/.system`. An explicit
+bundle can be selected with `--instructions /path/to/.system`.

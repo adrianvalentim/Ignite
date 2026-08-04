@@ -39,6 +39,28 @@ connections:
 
 # Systems and Feedback
 
+## Book Map
+
+**Overall argument:** System behavior becomes intelligible when reciprocal
+influences, delayed consequences, and leverage points are understood as parts of
+one evolving structure rather than isolated events.
+
+**Conceptual progression:**
+
+- Feedback Loops distinguishes reciprocal influence from one-way causation.
+- Delays explains why visible responses can arrive after the actions that
+  produced them.
+- Leverage Points asks where a small intervention can change the behavior of
+  the larger system.
+
+**Key dependencies:**
+
+- Reasoning about delays requires first identifying what travels around a loop.
+- Evaluating a leverage point requires understanding both the loop it affects
+  and the timing of the resulting response.
+- Balancing behavior depends on a target or range, not merely on change slowing
+  down.
+
 ## Current State
 
 The learner has reconstructed the idea that feedback loops are patterns of

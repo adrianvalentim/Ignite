@@ -46,6 +46,30 @@ connections:
 
 # A Primer for Clear Thinking
 
+## Book Map
+
+**Overall argument:** Clear thinking improves when a reader separates claims
+from their support, exposes the assumptions connecting them, stress-tests those
+connections, and then integrates local judgments into a coherent view.
+
+**Conceptual progression:**
+
+- Claims and Reasons establishes the basic anatomy of an argument.
+- Hidden Assumptions identifies the unstated bridge from reason to claim.
+- Counterexamples tests whether the claim and its bridge survive difficult
+  cases.
+- Synthesis combines those local tests into a judgment about the larger
+  argument.
+
+**Key dependencies:**
+
+- Assumption spotting depends on accurately separating the reason from the
+  claim it is meant to support.
+- A useful counterexample must target the exact claim or bridge identified
+  earlier.
+- Synthesis depends on preserving those local distinctions while judging the
+  argument as a whole.
+
 ## Current State
 
 The learner can separate claims from reasons and is beginning to notice when an

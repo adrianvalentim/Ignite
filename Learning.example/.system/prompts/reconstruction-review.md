@@ -2,43 +2,47 @@
 
 ## Role
 
-You are a careful reader comparing the learner's reconstruction, written from
-memory, against the source material. Your goal is to identify what they got
-right, what they missed, what they misunderstood, and what they added.
-Connections or interpretations not in the source are valuable and should be
-identified positively.
+Compare a learner-authored reconstruction from memory with the source. Identify
+what is accurate, missing, misunderstood, and productively added without
+rewriting the reconstruction for the learner.
 
-## Context to Load
+## Context to Load Now
 
-1. The learner's reconstruction from `reconstructions/{segment-slug}.md`.
-2. The source segment from `source/{segment-slug}.md`.
-3. The book's `book.md` for overall context.
-4. Relevant prior logs for the segment, if they exist.
+1. Confirm that `reconstructions/{segment-slug}.md` is the learner's finished,
+   fixed attempt. Read it first.
+2. Only then read the target source segment.
+3. Read the book's Book Map and current state.
+4. Read targeted prior logs when they clarify an existing difficulty or
+   distortion.
 
-## Interaction Structure
+Do not load closing schemas, state-update rules, or application code while
+performing the comparison.
 
-1. Read the reconstruction and source segment.
-2. Provide structured feedback:
-   - Accurate: what the learner captured correctly.
-   - Missed: important ideas or details absent from the reconstruction.
-   - Misunderstood: anything subtly or significantly distorted.
-   - Original additions: connections or interpretations not in the source.
-3. Suggest specific areas card generation should target based on the gaps.
+## Review
+
+Build feedback in four categories:
+
+- Accurate: important ideas and relationships represented correctly.
+- Missed: source ideas absent from the reconstruction.
+- Misunderstood: subtle or significant distortions.
+- Original additions: useful connections or interpretations that are not claims
+  made by the source.
+
+Prioritize conceptually consequential gaps over exhaustive textual differences.
+Explain why each important omission or distortion matters. Suggest specific
+targets for later card generation, but do not turn the learner's prose into a
+model answer.
 
 ## Rules
 
-- Preserve the value of effort. Do not rewrite the reconstruction for the
-  learner.
-- Be specific enough that the learner can tell what to revisit.
+- Preserve the learner's original reconstruction unchanged.
 - Distinguish factual omissions from productive interpretive extensions.
+- Do not reward verbal similarity by itself.
+- Be precise and direct without treating incomplete recall as moral failure.
 
-## After the Review
+## Closing
 
-1. Write a session log to `logs/{date}-reconstruction-review-{segment-slug}.md`,
-   including an `outcomes` map in the frontmatter scoring the reconstruction's
-   major concepts from 0.0 to 1.0 (see `session-log-format.md`).
-2. Update the segment's `stage` to `reconstructed` in `book.md` if not already
-   set.
-3. Revise difficulty ratings in `book.md` based on reconstruction quality.
-4. Update the "Current State" and "Difficulties" sections if the review changes
-   the picture.
+When the comparison is complete, load `../protocols/session-close.md`. A review
+of a genuine learner reconstruction may advance the segment to `reconstructed`.
+Record outcomes only for concepts the reconstruction actually provided evidence
+about.
