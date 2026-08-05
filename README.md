@@ -9,14 +9,21 @@ and review.
 This repository is designed to be shareable without publishing a personal
 learning vault.
 
-- `App/` contains the local tracker app.
+- `App/` contains the Tauri desktop tracker and its optional browser mode.
 - `Learning.example/` contains a small synthetic demo workspace.
 - `Learning/` is reserved for a real private vault and is ignored by git.
 - `AGENTS.md` and `Learning.example/.system/prompts/` contain the AI operating
   instructions and session workflows.
 
 For personal use, keep your private learning data in a separate private repo or
-local folder, then point the app at it:
+local folder. Start the desktop app and choose that vault on first launch:
+
+```bash
+pnpm -C App install:all
+pnpm -C App desktop:dev
+```
+
+The browser/server mode remains available when it is useful for development:
 
 ```bash
 LEARNING_WORKSPACE="/path/to/private/Learning" pnpm -C App dev
@@ -31,16 +38,17 @@ Maintain application improvements in this public repository. A private
 learning repository should contain the real vault, not another maintained copy
 of `App/`.
 
-Run this checkout against a private vault with:
+Run the browser/server mode against a private vault with:
 
 ```bash
 cd /path/to/effortful-learning-system
 LEARNING_WORKSPACE="/path/to/private-repo/Learning" pnpm -C App dev
 ```
 
-The app reads the external vault directly, so a local app improvement applies
-to personal use immediately. Other users receive it after the public change is
-committed, pushed, and pulled into their checkout.
+The app reads the external vault directly. Changes made by a learning agent are
+reflected in an open desktop window automatically. Application-code changes
+appear immediately in `desktop:dev`; packaged copies must be rebuilt until a
+signed update channel is added.
 
 ## Demo Data
 

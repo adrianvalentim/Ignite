@@ -1,0 +1,20 @@
+[package]
+name = "effortful-learning"
+version = "0.1.0"
+description = "Read-only desktop tracker for an Effortful Learning workspace"
+authors = ["Adrian Valentim"]
+edition = "2021"
+rust-version = "1.86"
+
+[lib]
+name = "effortful_learning_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = { version = "2", features = ["watch"] }
+tauri-plugin-persisted-scope = "2"

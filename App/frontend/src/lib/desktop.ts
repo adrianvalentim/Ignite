@@ -1,0 +1,183 @@
+import { isTauri } from "@tauri-apps/api/core";
+import { join } from "@tauri-apps/api/path";
+import { open } from "@tauri-apps/plugin-dialog";
+import {
+  exists,
+  readDir,
+  readTextFile,
+  stat,
+  watch,
+  type UnwatchFn,
+  type WatchEvent,
+} from "@tauri-apps/plugin-fs";
+import { marked } from "marked";
+import { parse as parseYaml } from "yaml";
+import { buildTodayFrom, localToday } from "@shared/schedule";
+import { buildStatsFrom } from "@shared/stats";
+import {
+  createVaultService,
+  type VaultReader,
+  type VaultService,
+} from "@shared/vault";
+
+const WORKSPACE_KEY = "effortful-learning.workspace";
+const FRONTMATTER = /^---\s*\r?\n([\s\S]*?)\r?\n---\s*(?:\r?\n|$)/;
+
+export const isDesktopApp = (): boolean => isTauri();
+
+export function currentWorkspace(): string | null {
+  if (!isDesktopApp()) return null;
+  return localStorage.getItem(WORKSPACE_KEY);
+}
+
+let cachedRoot: string | null = null;
+let cachedService: VaultService | null = null;
+
+function parseMarkdownFile(raw: string) {
+  const match = raw.match(FRONTMATTER);
+  if (!match) return { data: {}, content: raw };
+  const parsed = parseYaml(match[1]);
+  return {
+    data:
+      parsed && typeof parsed === "object"
+        ? (parsed as Record<string, unknown>)
+        : {},
+    content: raw.slice(match[0].length),
+  };
+}
+
+function safeSegments(relativePath: string): string[] {
+  if (relativePath.startsWith("/") || relativePath.includes("\\")) {
+    throw new Error("Vault paths must be relative");
+  }
+  const segments = relativePath.split("/").filter(Boolean);
+  if (segments.some((segment) => segment === "." || segment === "..")) {
+    throw new Error("Vault path escapes the selected workspace");
+  }
+  return segments;
+}
+
+function createDesktopReader(root: string): VaultReader {
+  async function resolveRelative(relativePath: string): Promise<string> {
+    return join(root, ...safeSegments(relativePath));
+  }
+
+  return {
+    async readText(relativePath) {
+      return readTextFile(await resolveRelative(relativePath));
+    },
+    async readDir(relativePath) {
+      return (await readDir(await resolveRelative(relativePath))).map((entry) => ({
+        name: entry.name,
+        isFile: entry.isFile,
+        isDirectory: entry.isDirectory,
+      }));
+    },
+    async exists(relativePath) {
+      return exists(await resolveRelative(relativePath));
+    },
+    async size(relativePath) {
+      try {
+        const info = await stat(await resolveRelative(relativePath));
+        return info.isFile ? info.size : null;
+      } catch {
+        return null;
+      }
+    },
+    parseMarkdown(raw) {
+      return parseMarkdownFile(raw);
+    },
+    async renderMarkdown(markdown) {
+      const html = await marked.parse(markdown);
+      return typeof html === "string" ? html : "";
+    },
+  };
+}
+
+function service(): VaultService {
+  const root = currentWorkspace();
+  if (!root) throw new Error("Choose a Learning workspace to continue.");
+  if (root !== cachedRoot || !cachedService) {
+    cachedRoot = root;
+    cachedService = createVaultService(createDesktopReader(root), { strict: true });
+  }
+  return cachedService;
+}
+
+export async function chooseWorkspace(): Promise<string | null> {
+  const selection = await open({
+    title: "Choose your Learning workspace",
+    directory: true,
+    multiple: false,
+    recursive: true,
+  });
+  if (typeof selection !== "string") return null;
+
+  const reader = createDesktopReader(selection);
+  if (!(await reader.exists("books"))) {
+    throw new Error("That folder is not a Learning workspace: the books folder is missing.");
+  }
+
+  localStorage.setItem(WORKSPACE_KEY, selection);
+  cachedRoot = null;
+  cachedService = null;
+  return selection;
+}
+
+export const desktopApi = {
+  books: () => service().readAllBooks(),
+  book: (slug: string) => service().readBookDetail(slug),
+  timeline: () => service().readAllLogs(),
+  async today() {
+    const [books, logs] = await Promise.all([
+      service().readAllBooks(),
+      service().readAllLogs(),
+    ]);
+    return buildTodayFrom(books, logs, localToday());
+  },
+  async stats() {
+    const [books, logs] = await Promise.all([
+      service().readAllBooks(),
+      service().readAllLogs(),
+    ]);
+    return buildStatsFrom(books, logs, localToday());
+  },
+  log: (book: string, file: string) => service().readLogDetail(book, file),
+  search: (query: string) => service().search(query),
+};
+
+function concernsLearningData(event: WatchEvent): boolean {
+  return event.paths.some((path) => {
+    const normalised = path.replaceAll("\\", "/");
+    return normalised.includes("/books/") || normalised.includes("/cross-book/");
+  });
+}
+
+export function subscribeDesktopWorkspace(onChange: () => void): () => void {
+  const root = currentWorkspace();
+  if (!root) return () => undefined;
+
+  let disposed = false;
+  let unwatch: UnwatchFn | null = null;
+  let debounce: number | null = null;
+  void watch(
+    root,
+    (event) => {
+      if (!concernsLearningData(event)) return;
+      if (debounce !== null) window.clearTimeout(debounce);
+      debounce = window.setTimeout(onChange, 120);
+    },
+    { recursive: true, delayMs: 200 },
+  ).then((stop) => {
+    if (disposed) void stop();
+    else unwatch = stop;
+  }).catch((error: unknown) => {
+    console.error("Could not watch the Learning workspace", error);
+  });
+
+  return () => {
+    disposed = true;
+    if (debounce !== null) window.clearTimeout(debounce);
+    if (unwatch) void unwatch();
+  };
+}
