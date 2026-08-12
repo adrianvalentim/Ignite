@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import DOMPurify from "dompurify";
+import { useEffect, useMemo, useState } from "react";
 import type { LogDetail } from "../../../shared/types";
 import { api } from "../lib/api";
 
@@ -17,6 +18,15 @@ interface Props {
 export function LogModal({ logRef, onClose }: Props) {
   const [log, setLog] = useState<LogDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const safeBodyHtml = useMemo(
+    () =>
+      DOMPurify.sanitize(log?.body_html ?? "", {
+        USE_PROFILES: { html: true },
+        FORBID_TAGS: ["style"],
+        FORBID_ATTR: ["style"],
+      }),
+    [log?.body_html],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -120,8 +130,8 @@ export function LogModal({ logRef, onClose }: Props) {
 
             <div
               className="md-body mt-8"
-              // Rendered from the vault's own markdown by the local backend.
-              dangerouslySetInnerHTML={{ __html: log.body_html }}
+              // Vault Markdown may contain raw HTML, so sanitize it at the render boundary.
+              dangerouslySetInnerHTML={{ __html: safeBodyHtml }}
             />
           </div>
         )}

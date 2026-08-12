@@ -12,6 +12,7 @@ const VIEWS: { id: View; label: string }[] = [
   { id: "kanban", label: "Board" },
   { id: "timeline", label: "Chronicle" },
   { id: "stats", label: "Ledger" },
+  { id: "chat", label: "Codex" },
 ];
 
 export function ViewSwitcher({ view, onChange, onSearch }: Props) {

@@ -19,6 +19,7 @@ import { LogModal, type LogRef } from "./components/LogModal";
 import { SearchOverlay } from "./components/SearchOverlay";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { ViewSwitcher } from "./components/ViewSwitcher";
+import { CodexChat } from "./components/CodexChat";
 
 export default function App() {
   const desktop = isDesktopApp();
@@ -133,7 +134,9 @@ export default function App() {
       {desktop && workspacePath && (
         <WorkspaceControl path={workspacePath} onChoose={selectWorkspace} />
       )}
-      {error ? (
+      {view === "chat" ? (
+        <CodexChat workspacePath={workspacePath} />
+      ) : error ? (
         <FullError
           error={error}
           desktop={desktop}

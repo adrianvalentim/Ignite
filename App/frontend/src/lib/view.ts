@@ -1,8 +1,8 @@
-export type View = "today" | "library" | "kanban" | "timeline" | "stats";
+export type View = "today" | "library" | "kanban" | "timeline" | "stats" | "chat";
 
 const STORAGE_KEY = "effortful-view";
 
-const VALID_VIEWS: View[] = ["today", "library", "kanban", "timeline", "stats"];
+const VALID_VIEWS: View[] = ["today", "library", "kanban", "timeline", "stats", "chat"];
 
 export function readInitialView(): View {
   if (typeof window === "undefined") return "today";

@@ -1,12 +1,15 @@
 # Effortful Learning Tracker App
 
-This folder contains the read-only tracker for an Effortful Learning workspace.
-The recommended interface is now a Tauri 2 desktop app; the original local
-browser/server mode remains available.
+This folder contains the tracker for an Effortful Learning workspace. The
+recommended interface is a Tauri 2 desktop app; the original local
+browser/server mode remains available. The desktop app also provides a Codex
+chat backed by the locally installed Codex CLI and the user's existing ChatGPT
+sign-in.
 
 The learning vault stays outside the application and remains the source of
-truth. There is no database and the app has no command that can write learning
-content.
+truth. There is no database. The tracker filesystem adapter remains read-only;
+only the separate Codex process can propose and perform changes, under Codex's
+normal sandbox and approval flow.
 
 ## Run the Desktop App
 
@@ -25,6 +28,30 @@ and watch permissions.
 An open window watches `books/` and `cross-book/`. When Codex, Claude Code, or
 another process updates a valid vault file, the current views silently reload.
 Changing app code during `desktop:dev` uses Vite's normal hot reload.
+
+### Codex Chat
+
+Open the **Codex** view to start a chat or resume existing Codex CLI, editor,
+and app-server chats associated with the selected workspace. New chats use the
+selected Learning folder as their working directory, `workspace-write`
+sandboxing, and user-reviewed approvals.
+
+The app starts `codex app-server` over local stdio. It does not ask for an API
+key or wrap the OpenAI API directly. Authenticate the installed CLI with your
+ChatGPT subscription before opening the app:
+
+```bash
+codex login
+codex login status
+```
+
+On macOS, the app also discovers the Codex binary bundled with ChatGPT. On any
+platform, set `CODEX_EXECUTABLE` to an explicit Codex CLI path if it is not on
+the GUI application's `PATH`.
+
+This does not replace other entry points. Codex or Claude Code can still run in
+a terminal and update the same external vault; the tracker watcher will pick up
+those changes. Claude chat is not embedded in this version.
 
 Useful commands:
 
@@ -69,17 +96,20 @@ The backend resolves the workspace in this order:
 
 This mode is useful for ordinary browser development and remains behaviorally
 aligned with the desktop app because both use the same shared vault core.
+All tracker views continue to work in this mode. Codex chat is desktop-only
+because its bridge is a native child process; the browser view explains how to
+open it in Tauri.
 
 ## Architecture
 
-- `frontend/`: the React/Vite interface plus a Tauri filesystem adapter and the
-  original HTTP adapter.
+- `frontend/`: the React/Vite interface, Codex App Server protocol client, a
+  Tauri filesystem adapter, and the original HTTP adapter.
 - `shared/`: filesystem-independent parsing, search, scheduling, statistics,
   and types used by both application modes.
 - `backend/`: the optional Fastify file-serving API and its Node filesystem
   adapter.
-- `src-tauri/`: the small Rust shell, desktop capabilities, plugins, bundle
-  configuration, and icons.
+- `src-tauri/`: the small Rust shell, desktop capabilities, local Codex stdio
+  bridge, plugins, bundle configuration, and icons.
 
 Rust owns the native window and operating-system permissions. Product behavior
 stays in TypeScript, so most interface and learning-system changes use the same
@@ -103,6 +133,8 @@ offline and does not contact Google Fonts at runtime.
 - **Board**: books grouped by status.
 - **Chronicle**: the session timeline with full-log reading.
 - **Ledger**: weekly effort, retention, stage distribution, and difficulty.
+- **Codex**: local subscription-backed Codex chat, history, streaming activity,
+  approvals, and user-input prompts.
 
 Search the whole vault with `Cmd+K` on macOS or `Ctrl+K` on Windows and Linux.
 
@@ -122,6 +154,7 @@ session logs, including retrieval count, difficulty, and recorded outcomes.
 Editing or deleting a log therefore corrects the schedule on the next refresh.
 
 - No database.
-- No AI API calls.
-- No learning-content write permissions.
+- No direct AI API integration and no API key handling in the app.
+- No learning-content write permissions in the tracker adapter. Codex changes
+  remain isolated behind its own workspace sandbox and approvals.
 - No private learning data in this public repository.

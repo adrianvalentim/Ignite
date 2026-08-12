@@ -30,7 +30,7 @@
     "active": true,
     "targets": "all",
     "category": "Education",
-    "shortDescription": "A read-only view of your Effortful Learning workspace",
+    "shortDescription": "A learning tracker with local Codex chat",
     "macOS": {
       "minimumSystemVersion": "10.15"
     }
