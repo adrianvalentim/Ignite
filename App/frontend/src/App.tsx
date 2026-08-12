@@ -1,10 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import type {
-  BookSummary,
-  SessionLog,
-  StatsPayload,
-  TodayPayload,
-} from "../../shared/types";
+import type { WorkspaceSnapshot } from "../../shared/types";
+import { createRefreshCoordinator } from "../../shared/refresh";
 import { api, subscribeWorkspace } from "./lib/api";
 import {
   chooseWorkspace,
@@ -31,10 +27,7 @@ export default function App() {
   );
   const [choosingWorkspace, setChoosingWorkspace] = useState(false);
   const [workspaceError, setWorkspaceError] = useState<string | null>(null);
-  const [books, setBooks] = useState<BookSummary[] | null>(null);
-  const [logs, setLogs] = useState<SessionLog[]>([]);
-  const [today, setToday] = useState<TodayPayload | null>(null);
-  const [stats, setStats] = useState<StatsPayload | null>(null);
+  const [snapshot, setSnapshot] = useState<WorkspaceSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [openSlug, setOpenSlug] = useState<string | null>(null);
   const [openLog, setOpenLog] = useState<LogRef | null>(null);
@@ -47,34 +40,13 @@ export default function App() {
     persistView(next);
   }, []);
 
-  const load = useCallback(async () => {
-    setError(null);
-    try {
-      const [nextBooks, nextLogs, nextToday, nextStats] = await Promise.all([
-        api.books(),
-        api.timeline(),
-        api.today(),
-        api.stats(),
-      ]);
-      setBooks(nextBooks);
-      setLogs(nextLogs);
-      setToday(nextToday);
-      setStats(nextStats);
-    } catch (loadError) {
-      setError(String(loadError));
-    }
-  }, []);
-
   const selectWorkspace = useCallback(async () => {
     setChoosingWorkspace(true);
     setWorkspaceError(null);
     try {
       const selected = await chooseWorkspace();
       if (selected) {
-        setBooks(null);
-        setLogs([]);
-        setToday(null);
-        setStats(null);
+        setSnapshot(null);
         setError(null);
         setWorkspacePath(selected);
       }
@@ -87,16 +59,39 @@ export default function App() {
 
   useEffect(() => {
     if (desktop && !workspacePath) return undefined;
-    let active = true;
+    let disposed = false;
     let unsubscribe: (() => void) | null = null;
-    void load().then(() => {
-      if (active) unsubscribe = subscribeWorkspace(load);
+    const subscriptionAbort = new AbortController();
+    const refresh = createRefreshCoordinator({
+      load: () => api.snapshot(),
+      onSuccess: (nextSnapshot) => {
+        setError(null);
+        setSnapshot(nextSnapshot);
+      },
+      onError: (loadError) => setError(String(loadError)),
     });
+
+    void subscribeWorkspace(refresh.request, subscriptionAbort.signal)
+      .then((stop) => {
+        if (disposed) {
+          stop();
+          return;
+        }
+        unsubscribe = stop;
+        refresh.request();
+      })
+      .catch((subscriptionError: unknown) => {
+        console.error("Could not subscribe to workspace changes", subscriptionError);
+        if (!disposed) refresh.request();
+      });
+
     return () => {
-      active = false;
+      disposed = true;
+      subscriptionAbort.abort();
+      refresh.dispose();
       unsubscribe?.();
     };
-  }, [desktop, load, workspacePath]);
+  }, [desktop, workspacePath]);
 
   const openLogFile = useCallback((book: string, file: string) => {
     setOpenLog({ book, file });
@@ -144,28 +139,34 @@ export default function App() {
           desktop={desktop}
           onChoose={desktop ? selectWorkspace : undefined}
         />
-      ) : !books ? (
+      ) : !snapshot ? (
         <FullLoading />
       ) : (
         <>
-          {view === "today" &&
-            (today ? <Today today={today} onOpen={setOpenSlug} /> : <FullLoading />)}
-          {view === "library" && <Library books={books} onOpen={setOpenSlug} />}
-          {view === "kanban" && <Kanban books={books} onOpen={setOpenSlug} />}
+          {view === "today" && (
+            <Today today={snapshot.today} onOpen={setOpenSlug} />
+          )}
+          {view === "library" && (
+            <Library books={snapshot.books} onOpen={setOpenSlug} />
+          )}
+          {view === "kanban" && (
+            <Kanban books={snapshot.books} onOpen={setOpenSlug} />
+          )}
           {view === "timeline" && (
             <Timeline
-              books={books}
-              logs={logs}
+              books={snapshot.books}
+              logs={snapshot.logs}
               onOpen={setOpenSlug}
               onOpenLog={openLogFile}
             />
           )}
-          {view === "stats" &&
-            (stats ? (
-              <Stats stats={stats} books={books} onOpen={setOpenSlug} />
-            ) : (
-              <FullLoading />
-            ))}
+          {view === "stats" && (
+            <Stats
+              stats={snapshot.stats}
+              books={snapshot.books}
+              onOpen={setOpenSlug}
+            />
+          )}
           {openSlug && (
             <BookDetail
               slug={openSlug}

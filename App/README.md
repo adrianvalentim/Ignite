@@ -13,7 +13,7 @@ content.
 Install Node.js, pnpm, and Rust, then from this folder run:
 
 ```bash
-pnpm install:all
+pnpm install
 pnpm desktop:dev
 ```
 
@@ -85,6 +85,16 @@ Rust owns the native window and operating-system permissions. Product behavior
 stays in TypeScript, so most interface and learning-system changes use the same
 React workflow as before.
 
+Each top-level refresh reads book metadata and session logs once into a shared
+workspace snapshot. Today, Library, Board, Chronicle, and Ledger are derived
+from that same immutable in-memory value in both desktop and browser modes.
+Filesystem notifications are serialized and coalesced so refresh reads never
+overlap.
+
+Fraunces, Inter, and JetBrains Mono are bundled locally as variable WOFF2
+assets with their licenses. The interface therefore keeps its typography when
+offline and does not contact Google Fonts at runtime.
+
 ## Views
 
 - **Today ("The Desk")**: review queue, pipeline moves, upcoming reviews, and
@@ -99,13 +109,11 @@ Search the whole vault with `Cmd+K` on macOS or `Ctrl+K` on Windows and Linux.
 ## Validation
 
 ```bash
-pnpm -C backend test
-pnpm -C frontend build
-pnpm desktop:check
+pnpm check
 ```
 
-The backend test exercises the public synthetic workspace end to end. Desktop
-build validation checks the Tauri permission manifest and native shell.
+The check runs the backend tests against the public synthetic workspace, builds
+the frontend, and validates the Tauri permission manifest and native shell.
 
 ## Review Schedule and Constraints
 

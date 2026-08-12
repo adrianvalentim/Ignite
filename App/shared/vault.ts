@@ -8,6 +8,7 @@ import type {
   Segment,
   SegmentStage,
   SessionLog,
+  WorkspaceData,
 } from "./types.js";
 
 export interface VaultEntry {
@@ -37,6 +38,7 @@ export interface VaultReader {
 export interface VaultService {
   readBookSummary(slug: string): Promise<BookSummary | null>;
   readBookDetail(slug: string): Promise<BookDetail | null>;
+  readWorkspaceData(): Promise<WorkspaceData>;
   readAllBooks(): Promise<BookSummary[]>;
   readLogDetail(slug: string, file: string): Promise<LogDetail | null>;
   readAllLogs(): Promise<SessionLog[]>;
@@ -270,20 +272,32 @@ export function createVaultService(
     return logs.sort((a, b) => (a.date < b.date ? 1 : -1));
   }
 
-  async function readBookSummary(slug: string): Promise<BookSummary | null> {
-    const bookDir = vaultPath("books", slug);
-    const markdown = await readMarkdown(vaultPath(bookDir, "book.md"));
-    if (!markdown) return null;
-    const meta = parseBookMeta(markdown.data, slug);
+  function summariseBook(meta: BookMeta, logs: SessionLog[]): BookSummary {
     const completed = meta.segments.filter((segment) =>
       COMPLETED_STAGES.includes(segment.stage),
     ).length;
     const total = meta.total_segments || meta.segments.length;
-    const logs = await readSessionLogs(bookDir, slug);
     return {
       ...meta,
       progress: { completed, total, last_active: logs[0]?.date },
     };
+  }
+
+  async function readBookBundle(
+    slug: string,
+  ): Promise<{ book: BookSummary; logs: SessionLog[] } | null> {
+    const bookDir = vaultPath("books", slug);
+    const markdown = await readMarkdown(vaultPath(bookDir, "book.md"));
+    if (!markdown) return null;
+    const logs = await readSessionLogs(bookDir, slug);
+    return {
+      book: summariseBook(parseBookMeta(markdown.data, slug), logs),
+      logs,
+    };
+  }
+
+  async function readBookSummary(slug: string): Promise<BookSummary | null> {
+    return (await readBookBundle(slug))?.book ?? null;
   }
 
   async function readBookDetail(slug: string): Promise<BookDetail | null> {
@@ -292,14 +306,9 @@ export function createVaultService(
     const markdown = await readMarkdown(vaultPath(bookDir, "book.md"));
     if (!markdown) return null;
     const meta = parseBookMeta(markdown.data, slug);
-    const completed = meta.segments.filter((segment) =>
-      COMPLETED_STAGES.includes(segment.stage),
-    ).length;
-    const total = meta.total_segments || meta.segments.length;
     const logs = await readSessionLogs(bookDir, slug);
     return {
-      ...meta,
-      progress: { completed, total, last_active: logs[0]?.date },
+      ...summariseBook(meta, logs),
       body_html: await reader.renderMarkdown(markdown.content),
       logs,
       has_thesis: await reader.exists(vaultPath(bookDir, "thesis.md")),
@@ -307,13 +316,23 @@ export function createVaultService(
     };
   }
 
-  async function readAllBooks(): Promise<BookSummary[]> {
+  async function readWorkspaceData(): Promise<WorkspaceData> {
+    const bundles = await Promise.all(
+      (await listBookDirs()).map((slug) => readBookBundle(slug)),
+    );
     const books: BookSummary[] = [];
-    for (const slug of await listBookDirs()) {
-      const book = await readBookSummary(slug);
-      if (book) books.push(book);
+    const logs: SessionLog[] = [];
+    for (const bundle of bundles) {
+      if (!bundle) continue;
+      books.push(bundle.book);
+      logs.push(...bundle.logs);
     }
-    return books;
+    logs.sort((a, b) => (a.date < b.date ? 1 : -1));
+    return { books, logs };
+  }
+
+  async function readAllBooks(): Promise<BookSummary[]> {
+    return (await readWorkspaceData()).books;
   }
 
   async function readLogDetail(slug: string, file: string): Promise<LogDetail | null> {
@@ -476,6 +495,7 @@ export function createVaultService(
   return {
     readBookSummary,
     readBookDetail,
+    readWorkspaceData,
     readAllBooks,
     readLogDetail,
     readAllLogs,

@@ -11,6 +11,7 @@ import {
 } from "./workspace.js";
 import { buildToday } from "./schedule.js";
 import { buildStats } from "./stats.js";
+import { buildSnapshot } from "./snapshot.js";
 import { searchWorkspace } from "./search.js";
 
 const PORT = Number(process.env.PORT) || 3333;
@@ -41,6 +42,8 @@ app.get("/api/timeline", async () => {
   const logs = await readAllLogs(config.workspace_path);
   return { logs };
 });
+
+app.get("/api/snapshot", async () => buildSnapshot(config.workspace_path));
 
 app.get<{ Params: { slug: string; file: string } }>(
   "/api/books/:slug/logs/:file",

@@ -151,6 +151,19 @@ export interface StatsPayload {
 }
 
 // ---------------------------------------------------------------------------
+// Coherent workspace reads used by both browser and desktop refreshes.
+
+export interface WorkspaceData {
+  books: BookSummary[];
+  logs: SessionLog[];
+}
+
+export interface WorkspaceSnapshot extends WorkspaceData {
+  today: TodayPayload;
+  stats: StatsPayload;
+}
+
+// ---------------------------------------------------------------------------
 // Search
 
 export type SearchKind =

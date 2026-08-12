@@ -125,6 +125,10 @@ export function readAllBooks(workspace: string) {
   return serviceFor(workspace).readAllBooks();
 }
 
+export function readWorkspaceData(workspace: string) {
+  return serviceFor(workspace).readWorkspaceData();
+}
+
 export function readLogDetail(workspace: string, slug: string, file: string) {
   return serviceFor(workspace).readLogDetail(slug, file);
 }

@@ -6,7 +6,7 @@ import {
   logMatchesSegment,
   parseDurationMinutes,
 } from "../../shared/schedule.js";
-import { readAllBooks, readAllLogs } from "./workspace.js";
+import { readWorkspaceData } from "./workspace.js";
 
 export {
   buildTodayFrom,
@@ -17,9 +17,6 @@ export {
 };
 
 export async function buildToday(workspace: string): Promise<TodayPayload> {
-  const [books, logs] = await Promise.all([
-    readAllBooks(workspace),
-    readAllLogs(workspace),
-  ]);
+  const { books, logs } = await readWorkspaceData(workspace);
   return buildTodayFrom(books, logs, localToday());
 }

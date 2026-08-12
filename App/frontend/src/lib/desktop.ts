@@ -19,6 +19,7 @@ import {
   type VaultReader,
   type VaultService,
 } from "@shared/vault";
+import { buildWorkspaceSnapshot } from "@shared/snapshot";
 
 const WORKSPACE_KEY = "effortful-learning.workspace";
 const FRONTMATTER = /^---\s*\r?\n([\s\S]*?)\r?\n---\s*(?:\r?\n|$)/;
@@ -125,6 +126,10 @@ export async function chooseWorkspace(): Promise<string | null> {
 }
 
 export const desktopApi = {
+  async snapshot() {
+    const data = await service().readWorkspaceData();
+    return buildWorkspaceSnapshot(data, localToday());
+  },
   books: () => service().readAllBooks(),
   book: (slug: string) => service().readBookDetail(slug),
   timeline: () => service().readAllLogs(),
@@ -146,38 +151,38 @@ export const desktopApi = {
   search: (query: string) => service().search(query),
 };
 
-function concernsLearningData(event: WatchEvent): boolean {
-  return event.paths.some((path) => {
-    const normalised = path.replaceAll("\\", "/");
-    return normalised.includes("/books/") || normalised.includes("/cross-book/");
-  });
-}
-
-export function subscribeDesktopWorkspace(onChange: () => void): () => void {
+export async function subscribeDesktopWorkspace(
+  onChange: () => void,
+): Promise<() => void> {
   const root = currentWorkspace();
   if (!root) return () => undefined;
 
-  let disposed = false;
-  let unwatch: UnwatchFn | null = null;
-  let debounce: number | null = null;
-  void watch(
-    root,
-    (event) => {
-      if (!concernsLearningData(event)) return;
-      if (debounce !== null) window.clearTimeout(debounce);
-      debounce = window.setTimeout(onChange, 120);
-    },
-    { recursive: true, delayMs: 200 },
-  ).then((stop) => {
-    if (disposed) void stop();
-    else unwatch = stop;
-  }).catch((error: unknown) => {
-    console.error("Could not watch the Learning workspace", error);
-  });
+  try {
+    const candidates = await Promise.all(
+      ["books", "cross-book"].map(async (relativePath) => {
+        const absolutePath = await join(root, relativePath);
+        return (await exists(absolutePath)) ? absolutePath : null;
+      }),
+    );
+    const roots = candidates.filter((path): path is string => path !== null);
+    if (roots.length === 0) return () => undefined;
 
-  return () => {
-    disposed = true;
-    if (debounce !== null) window.clearTimeout(debounce);
-    if (unwatch) void unwatch();
-  };
+    let debounce: number | null = null;
+    const unwatch: UnwatchFn = await watch(
+      roots,
+      (_event: WatchEvent) => {
+        if (debounce !== null) window.clearTimeout(debounce);
+        debounce = window.setTimeout(onChange, 120);
+      },
+      { recursive: true, delayMs: 200 },
+    );
+
+    return () => {
+      if (debounce !== null) window.clearTimeout(debounce);
+      void unwatch();
+    };
+  } catch (error: unknown) {
+    console.error("Could not watch the Learning workspace", error);
+    return () => undefined;
+  }
 }
