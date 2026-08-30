@@ -129,11 +129,11 @@ export default function App() {
         view={view}
         onChange={changeView}
         onSearch={() => setSearchOpen(true)}
+        workspacePath={desktop ? workspacePath : null}
+        choosingWorkspace={choosingWorkspace}
+        onChooseWorkspace={desktop ? selectWorkspace : undefined}
       />
       <ThemeToggle theme={theme} onToggle={toggleTheme} />
-      {desktop && workspacePath && (
-        <WorkspaceControl path={workspacePath} onChoose={selectWorkspace} />
-      )}
       {view === "chat" ? (
         <CodexChat workspacePath={workspacePath} />
       ) : error ? (
@@ -234,26 +234,6 @@ function WorkspaceSetup({
         </div>
       </section>
     </main>
-  );
-}
-
-function WorkspaceControl({
-  path,
-  onChoose,
-}: {
-  path: string;
-  onChoose: () => void;
-}) {
-  const name = path.replaceAll("\\", "/").split("/").filter(Boolean).at(-1);
-  return (
-    <button
-      type="button"
-      title={`Change workspace: ${path}`}
-      onClick={onChoose}
-      className="fixed left-5 top-5 z-40 max-w-52 truncate rounded-sm border border-line bg-bg-elev/90 px-3 py-2 font-mono text-[9.5px] uppercase tracking-[0.14em] text-ink-dim backdrop-blur transition-colors hover:border-line-strong hover:text-ink-soft"
-    >
-      {name ?? "Workspace"}
-    </button>
   );
 }
 

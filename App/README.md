@@ -29,6 +29,11 @@ An open window watches `books/` and `cross-book/`. When Codex, Claude Code, or
 another process updates a valid vault file, the current views silently reload.
 Changing app code during `desktop:dev` uses Vite's normal hot reload.
 
+On macOS, choose **Effortful Learning → Reload** or press **Cmd+R** to reload the
+current interface on demand. Development mode will then request the latest Vite
+output. An installed production app must first be rebuilt and reinstalled before
+Reload can show changed bundled code.
+
 ### Codex Chat
 
 Open the **Codex** view to start a chat or resume existing Codex CLI, editor,

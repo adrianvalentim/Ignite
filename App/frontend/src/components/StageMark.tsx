@@ -43,7 +43,7 @@ export function StageMark({ stage, size = 16, title }: Props) {
         <path
           d="M6.4 10.2 L8.9 12.7 L13.8 7.6"
           fill="none"
-          stroke="#15110d"
+          stroke="var(--stage-seal)"
           strokeWidth="1.6"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -56,17 +56,17 @@ export function StageMark({ stage, size = 16, title }: Props) {
 function stageColor(stage: SegmentStage): string {
   switch (stage) {
     case "unread":
-      return "#6b5d4d";
+      return "var(--color-ink-dim)";
     case "read":
-      return "#b6ac95";
+      return "var(--color-ink-soft)";
     case "interrogated":
-      return "#5b7a8c";
+      return "var(--color-slate-blue)";
     case "reconstructed":
-      return "#c9933a";
+      return "var(--color-amber)";
     case "carded":
-      return "#c9933a";
+      return "var(--color-amber)";
     case "complete":
-      return "#7c9a52"; // a brighter green for the filled seal
+      return "var(--stage-complete)";
   }
 }
 

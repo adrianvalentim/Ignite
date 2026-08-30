@@ -953,12 +953,9 @@ function UserInputRequest({
 function ChatWelcome() {
   return (
     <div className="mx-auto flex h-full max-w-lg flex-col items-center justify-center pb-16 text-center">
-      <p className="font-mono text-[9px] uppercase tracking-[0.3em] text-amber">Codex in your vault</p>
-      <h2 className="mt-4 font-display text-3xl text-ink">One project, another doorway.</h2>
-      <p className="mt-4 text-[13.5px] leading-relaxed text-ink-soft">
-        Open an existing Codex chat or start a new one. Codex works in the selected Learning folder,
-        while this tracker continues to observe changes without writing files itself.
-      </p>
+      <blockquote className="font-display text-3xl leading-snug text-ink">
+        The mind is not a vessel to be filled, but a fire to be kindled.
+      </blockquote>
     </div>
   );
 }

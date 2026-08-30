@@ -99,9 +99,6 @@ export function Timeline({ books, logs, onOpen, onOpenLog }: Props) {
         >
           The Chronicle
         </h1>
-        <p className="mt-3 max-w-lg text-[14.5px] leading-relaxed text-ink-soft">
-          A record of effort across weeks and months. Not a streak. A story.
-        </p>
       </header>
 
       <StatsFrieze stats={stats} />
