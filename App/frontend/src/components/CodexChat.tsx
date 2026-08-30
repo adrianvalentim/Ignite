@@ -1020,13 +1020,24 @@ function DesktopOnlyChat() {
   );
 }
 
+const timestampWithoutYear = new Intl.DateTimeFormat(undefined, {
+  month: "short",
+  day: "numeric",
+});
+const timestampWithYear = new Intl.DateTimeFormat(undefined, {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
+
 function formatTimestamp(seconds: number): string {
   if (!seconds) return "unknown";
-  return new Intl.DateTimeFormat(undefined, {
-    month: "short",
-    day: "numeric",
-    year: new Date(seconds * 1000).getFullYear() === new Date().getFullYear() ? undefined : "numeric",
-  }).format(new Date(seconds * 1000));
+  const date = new Date(seconds * 1000);
+  const formatter =
+    date.getFullYear() === new Date().getFullYear()
+      ? timestampWithoutYear
+      : timestampWithYear;
+  return formatter.format(date);
 }
 
 function stringifyCompact(value: unknown): string {

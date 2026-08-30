@@ -3,6 +3,7 @@ import cors from "@fastify/cors";
 import chokidar from "chokidar";
 import path from "node:path";
 import {
+  invalidateWorkspace,
   loadConfig,
   readAllBooks,
   readAllLogs,
@@ -123,6 +124,7 @@ const watcher = chokidar.watch(
 
 let debounce: NodeJS.Timeout | null = null;
 watcher.on("all", (event, file) => {
+  invalidateWorkspace(config.workspace_path);
   if (debounce) clearTimeout(debounce);
   debounce = setTimeout(() => {
     broadcast("workspace-changed", { event, file });

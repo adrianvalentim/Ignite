@@ -43,7 +43,16 @@ test("the shared vault core reads the public workspace end to end", async () => 
   assert.ok(logDetail?.body_html.includes("<"));
   assert.equal(today.pipeline.length, 2);
   assert.equal(stats.totals.sessions, logs.length);
-  assert.ok(search.length > 0);
+  assert.deepEqual(
+    search.map(({ kind, title, score }) => ({ kind, title, score })),
+    [
+      { kind: "book", title: "Systems and Feedback", score: 9 },
+      { kind: "source", title: "Feedback Loops", score: 8 },
+      { kind: "log", title: "Reconstruction Loops — 2026-01-11", score: 1 },
+      { kind: "log", title: "Recall Loops — 2026-01-24", score: 1 },
+      { kind: "cross-book", title: "Connections", score: 1 },
+    ],
+  );
 });
 
 test("log paths cannot escape the selected workspace", async () => {
@@ -140,6 +149,102 @@ test("a workspace snapshot reads each metadata and log file once", async () => {
     "books/real-book/book.md": 1,
     "books/real-book/logs/2026-01-01-session.md": 1,
   });
+});
+
+test("search reuses an invalidatable index and bounds parallel file work", async () => {
+  const sourceFiles = Array.from(
+    { length: 24 },
+    (_, index) => `${String(index + 1).padStart(2, "0")}-source.md`,
+  );
+  const logFile = "2026-01-01-session.md";
+  const files = new Map([
+    [
+      "books/real-book/book.md",
+      JSON.stringify({
+        data: {
+          title: "Real Book",
+          slug: "real-book",
+          status: "active",
+          segments: [],
+        },
+        content: "A quiet overview.",
+      }),
+    ],
+    [
+      `books/real-book/logs/${logFile}`,
+      JSON.stringify({ data: {}, content: "Needle in the session log." }),
+    ],
+    ...sourceFiles.map((file, index) => [
+      `books/real-book/source/${file}`,
+      JSON.stringify({ data: {}, content: `Needle in source ${index + 1}.` }),
+    ]),
+  ]);
+  const reads = new Map();
+  let activeReads = 0;
+  let maxActiveReads = 0;
+  const reader = {
+    async readText(relativePath) {
+      reads.set(relativePath, (reads.get(relativePath) ?? 0) + 1);
+      activeReads++;
+      maxActiveReads = Math.max(maxActiveReads, activeReads);
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 2));
+        const raw = files.get(relativePath);
+        if (!raw) throw new Error(`Unexpected read: ${relativePath}`);
+        return raw;
+      } finally {
+        activeReads--;
+      }
+    },
+    async readDir(relativePath) {
+      if (relativePath === "books") {
+        return [{ name: "real-book", isFile: false, isDirectory: true }];
+      }
+      if (relativePath === "books/real-book/source") {
+        return sourceFiles.map((name) => ({ name, isFile: true, isDirectory: false }));
+      }
+      if (relativePath === "books/real-book/logs") {
+        return [{ name: logFile, isFile: true, isDirectory: false }];
+      }
+      return [];
+    },
+    async exists(relativePath) {
+      return relativePath === "books/real-book/book.md";
+    },
+    async size(relativePath) {
+      const raw = files.get(relativePath);
+      return raw ? Buffer.byteLength(raw) : null;
+    },
+    parseMarkdown(raw) {
+      return JSON.parse(raw);
+    },
+    async renderMarkdown(markdown) {
+      return markdown;
+    },
+  };
+
+  const service = createVaultService(reader, { strict: true });
+  const results = await service.search("needle");
+  const readsAfterFirstSearch = [...reads.values()].reduce(
+    (total, count) => total + count,
+    0,
+  );
+
+  assert.equal(results.length, 20);
+  assert.equal(reads.get(`books/real-book/logs/${logFile}`), 1);
+  assert.ok(sourceFiles.every((file) => reads.get(`books/real-book/source/${file}`) === 1));
+  assert.ok(maxActiveReads > 1);
+  assert.ok(maxActiveReads <= 12);
+
+  assert.equal((await service.search("source")).length, 20);
+  assert.equal(
+    [...reads.values()].reduce((total, count) => total + count, 0),
+    readsAfterFirstSearch,
+  );
+
+  service.invalidate();
+  await service.search("needle");
+  assert.equal(reads.get(`books/real-book/logs/${logFile}`), 2);
 });
 
 test("refreshes are serialized and notifications coalesce into one trailing load", async () => {

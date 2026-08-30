@@ -113,6 +113,10 @@ export function serviceFor(workspace: string): VaultService {
   return service;
 }
 
+export function invalidateWorkspace(workspace: string) {
+  services.get(path.resolve(workspace))?.invalidate();
+}
+
 export function readBookSummary(workspace: string, slug: string) {
   return serviceFor(workspace).readBookSummary(slug);
 }

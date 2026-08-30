@@ -134,17 +134,11 @@ export const desktopApi = {
   book: (slug: string) => service().readBookDetail(slug),
   timeline: () => service().readAllLogs(),
   async today() {
-    const [books, logs] = await Promise.all([
-      service().readAllBooks(),
-      service().readAllLogs(),
-    ]);
+    const { books, logs } = await service().readWorkspaceData();
     return buildTodayFrom(books, logs, localToday());
   },
   async stats() {
-    const [books, logs] = await Promise.all([
-      service().readAllBooks(),
-      service().readAllLogs(),
-    ]);
+    const { books, logs } = await service().readWorkspaceData();
     return buildStatsFrom(books, logs, localToday());
   },
   log: (book: string, file: string) => service().readLogDetail(book, file),
@@ -171,6 +165,7 @@ export async function subscribeDesktopWorkspace(
     const unwatch: UnwatchFn = await watch(
       roots,
       (_event: WatchEvent) => {
+        if (cachedRoot === root) cachedService?.invalidate();
         if (debounce !== null) window.clearTimeout(debounce);
         debounce = window.setTimeout(onChange, 120);
       },

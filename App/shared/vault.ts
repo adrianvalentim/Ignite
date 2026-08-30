@@ -43,6 +43,7 @@ export interface VaultService {
   readLogDetail(slug: string, file: string): Promise<LogDetail | null>;
   readAllLogs(): Promise<SessionLog[]>;
   search(query: string): Promise<SearchResult[]>;
+  invalidate(): void;
 }
 
 export interface VaultServiceOptions {
@@ -53,9 +54,42 @@ export interface VaultServiceOptions {
 const COMPLETED_STAGES: SegmentStage[] = ["complete"];
 const MAX_RESULTS = 20;
 const MAX_FILE_BYTES = 512 * 1024;
+const MAX_CONCURRENT_FILE_TASKS = 12;
 const TITLE_WEIGHT = 6;
 const SLUG_RE = /^[a-z0-9][a-z0-9-]*$/i;
 const LOG_FILE_RE = /^[a-z0-9][a-z0-9._-]*\.md$/i;
+
+function createTaskLimiter(limit: number) {
+  let active = 0;
+  const queue: Array<() => void> = [];
+
+  function acquire(): Promise<void> {
+    if (active < limit) {
+      active++;
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      queue.push(() => {
+        active++;
+        resolve();
+      });
+    });
+  }
+
+  function release() {
+    active--;
+    queue.shift()?.();
+  }
+
+  return async function run<T>(task: () => Promise<T>): Promise<T> {
+    await acquire();
+    try {
+      return await task();
+    } finally {
+      release();
+    }
+  };
+}
 
 function vaultPath(...parts: string[]): string {
   return parts.filter(Boolean).join("/");
@@ -199,13 +233,24 @@ interface SearchCandidate {
   log_file?: string;
 }
 
+interface SearchDocument extends SearchCandidate {
+  contentLower: string;
+  plainContent: string;
+  titleLower: string;
+}
+
 export function createVaultService(
   reader: VaultReader,
   options: VaultServiceOptions = {},
 ): VaultService {
+  const runFileTask = createTaskLimiter(MAX_CONCURRENT_FILE_TASKS);
+  let searchIndexPromise: Promise<SearchDocument[]> | null = null;
+
   async function readMarkdown(relativePath: string): Promise<MarkdownDocument | null> {
     try {
-      return reader.parseMarkdown(await reader.readText(relativePath));
+      return reader.parseMarkdown(
+        await runFileTask(() => reader.readText(relativePath)),
+      );
     } catch (error) {
       if (options.strict) throw error;
       return null;
@@ -250,26 +295,31 @@ export function createVaultService(
 
   async function readSessionLogs(bookDir: string, slug: string): Promise<SessionLog[]> {
     const files = await listMarkdown(vaultPath(bookDir, "logs"));
-    const logs: SessionLog[] = [];
-    for (const file of files) {
-      const markdown = await readMarkdown(vaultPath(bookDir, "logs", file));
-      if (!markdown) continue;
-      logs.push({
-        path: `logs/${file}`,
-        date: asString(markdown.data.date),
-        book: asString(markdown.data.book, slug),
-        segment:
-          typeof markdown.data.segment === "string" ? markdown.data.segment : undefined,
-        type: asString(markdown.data.type, "session"),
-        duration_approx:
-          typeof markdown.data.duration_approx === "string"
-            ? markdown.data.duration_approx
-            : undefined,
-        summary: markdown.content.trim().slice(0, 400),
-        outcomes: normaliseOutcomes(markdown.data.outcomes),
-      });
-    }
-    return logs.sort((a, b) => (a.date < b.date ? 1 : -1));
+    const logs = await Promise.all(
+      files.map(async (file): Promise<SessionLog | null> => {
+        const markdown = await readMarkdown(vaultPath(bookDir, "logs", file));
+        if (!markdown) return null;
+        return {
+          path: `logs/${file}`,
+          date: asString(markdown.data.date),
+          book: asString(markdown.data.book, slug),
+          segment:
+            typeof markdown.data.segment === "string"
+              ? markdown.data.segment
+              : undefined,
+          type: asString(markdown.data.type, "session"),
+          duration_approx:
+            typeof markdown.data.duration_approx === "string"
+              ? markdown.data.duration_approx
+              : undefined,
+          summary: markdown.content.trim().slice(0, 400),
+          outcomes: normaliseOutcomes(markdown.data.outcomes),
+        };
+      }),
+    );
+    return logs
+      .filter((log): log is SessionLog => log !== null)
+      .sort((a, b) => (a.date < b.date ? 1 : -1));
   }
 
   function summariseBook(meta: BookMeta, logs: SessionLog[]): BookSummary {
@@ -364,77 +414,83 @@ export function createVaultService(
   }
 
   async function readAllLogs(): Promise<SessionLog[]> {
-    const logs: SessionLog[] = [];
-    for (const slug of await listBookDirs()) {
-      logs.push(...(await readSessionLogs(vaultPath("books", slug), slug)));
-    }
-    return logs.sort((a, b) => (a.date < b.date ? 1 : -1));
+    const groups = await Promise.all(
+      (await listBookDirs()).map((slug) =>
+        readSessionLogs(vaultPath("books", slug), slug),
+      ),
+    );
+    return groups.flat().sort((a, b) => (a.date < b.date ? 1 : -1));
   }
 
   async function collectCandidates(): Promise<SearchCandidate[]> {
-    const books = await readAllBooks();
-    const candidates: SearchCandidate[] = [];
+    const bookGroups = await Promise.all(
+      (await listBookDirs()).map(async (directory): Promise<SearchCandidate[]> => {
+        const markdown = await readMarkdown(vaultPath("books", directory, "book.md"));
+        if (!markdown) return [];
 
-    for (const book of books) {
-      const bookDir = vaultPath("books", book.slug);
-      const base = { book: book.slug, book_title: book.title };
-      candidates.push({
-        ...base,
-        kind: "book",
-        file: vaultPath(bookDir, "book.md"),
-        title: book.title,
-      });
+        const book = parseBookMeta(markdown.data, directory);
+        const bookDir = vaultPath("books", book.slug);
+        const base = { book: book.slug, book_title: book.title };
+        const [sources, logs, reconstructions, cards] = await Promise.all([
+          listMarkdown(vaultPath(bookDir, "source")),
+          listMarkdown(vaultPath(bookDir, "logs")),
+          listMarkdown(vaultPath(bookDir, "reconstructions")),
+          listMarkdown(vaultPath(bookDir, "cards")),
+        ]);
+        const candidates: SearchCandidate[] = [
+          {
+            ...base,
+            kind: "book",
+            file: vaultPath(bookDir, "book.md"),
+            title: book.title,
+          },
+        ];
 
-      const segmentTitle = (filename: string): string => {
-        const stem = filename.replace(/\.md$/, "");
-        const segment = book.segments.find(
-          (item) => stem === `${item.id}-${item.slug}` || stem === item.slug,
+        const segmentTitle = (filename: string): string => {
+          const stem = filename.replace(/\.md$/, "");
+          const segment = book.segments.find(
+            (item) => stem === `${item.id}-${item.slug}` || stem === item.slug,
+          );
+          return segment ? segment.title : humanise(filename);
+        };
+
+        candidates.push(
+          ...sources.map((file) => ({
+            ...base,
+            kind: "source" as const,
+            file: vaultPath(bookDir, "source", file),
+            title: segmentTitle(file),
+          })),
+          ...logs.map((file) => ({
+            ...base,
+            kind: "log" as const,
+            file: vaultPath(bookDir, "logs", file),
+            title: logTitle(file),
+            log_file: file,
+          })),
+          ...reconstructions.map((file) => ({
+            ...base,
+            kind: "reconstruction" as const,
+            file: vaultPath(bookDir, "reconstructions", file),
+            title: segmentTitle(file),
+          })),
+          ...cards.map((file) => ({
+            ...base,
+            kind: "cards" as const,
+            file: vaultPath(bookDir, "cards", file),
+            title: humanise(file),
+          })),
+          ...(["thesis", "essay"] as const).map((special) => ({
+            ...base,
+            kind: special,
+            file: vaultPath(bookDir, `${special}.md`),
+            title: `${book.title} — ${special}`,
+          })),
         );
-        return segment ? segment.title : humanise(filename);
-      };
-
-      for (const file of await listMarkdown(vaultPath(bookDir, "source"))) {
-        candidates.push({
-          ...base,
-          kind: "source",
-          file: vaultPath(bookDir, "source", file),
-          title: segmentTitle(file),
-        });
-      }
-      for (const file of await listMarkdown(vaultPath(bookDir, "logs"))) {
-        candidates.push({
-          ...base,
-          kind: "log",
-          file: vaultPath(bookDir, "logs", file),
-          title: logTitle(file),
-          log_file: file,
-        });
-      }
-      for (const file of await listMarkdown(vaultPath(bookDir, "reconstructions"))) {
-        candidates.push({
-          ...base,
-          kind: "reconstruction",
-          file: vaultPath(bookDir, "reconstructions", file),
-          title: segmentTitle(file),
-        });
-      }
-      for (const file of await listMarkdown(vaultPath(bookDir, "cards"))) {
-        candidates.push({
-          ...base,
-          kind: "cards",
-          file: vaultPath(bookDir, "cards", file),
-          title: humanise(file),
-        });
-      }
-      for (const special of ["thesis", "essay"] as const) {
-        candidates.push({
-          ...base,
-          kind: special,
-          file: vaultPath(bookDir, `${special}.md`),
-          title: `${book.title} — ${special}`,
-        });
-      }
-    }
+        return candidates;
+      }),
+    );
+    const candidates = bookGroups.flat();
 
     for (const file of await listMarkdown("cross-book")) {
       candidates.push({
@@ -446,6 +502,51 @@ export function createVaultService(
     return candidates;
   }
 
+  async function buildSearchIndex(): Promise<SearchDocument[]> {
+    const documents = await Promise.all(
+      (await collectCandidates()).map(
+        async (candidate): Promise<SearchDocument | null> => {
+          const raw = await runFileTask(async () => {
+            try {
+              const size = await reader.size(candidate.file);
+              if (size === null || size > MAX_FILE_BYTES) return null;
+              return await reader.readText(candidate.file);
+            } catch {
+              return null;
+            }
+          });
+          if (raw === null) return null;
+
+          const content = reader.parseMarkdown(raw).content;
+          return {
+            ...candidate,
+            contentLower: content.toLowerCase(),
+            plainContent: plainify(content),
+            titleLower: candidate.title.toLowerCase(),
+          };
+        },
+      ),
+    );
+    return documents.filter(
+      (document): document is SearchDocument => document !== null,
+    );
+  }
+
+  function searchIndex(): Promise<SearchDocument[]> {
+    if (!searchIndexPromise) {
+      const pending = buildSearchIndex();
+      searchIndexPromise = pending;
+      void pending.catch(() => {
+        if (searchIndexPromise === pending) searchIndexPromise = null;
+      });
+    }
+    return searchIndexPromise;
+  }
+
+  function invalidate() {
+    searchIndexPromise = null;
+  }
+
   async function search(query: string): Promise<SearchResult[]> {
     const terms = query
       .toLowerCase()
@@ -455,38 +556,27 @@ export function createVaultService(
     if (terms.length === 0) return [];
 
     const results: SearchResult[] = [];
-    for (const candidate of await collectCandidates()) {
-      let raw: string;
-      try {
-        const size = await reader.size(candidate.file);
-        if (size === null || size > MAX_FILE_BYTES) continue;
-        raw = await reader.readText(candidate.file);
-      } catch {
-        continue;
-      }
-      const content = reader.parseMarkdown(raw).content;
-      const contentLower = content.toLowerCase();
-      const titleLower = candidate.title.toLowerCase();
+    for (const document of await searchIndex()) {
       let score = 0;
       let allPresent = true;
       for (const term of terms) {
         const hits =
-          countOccurrences(contentLower, term) +
-          TITLE_WEIGHT * countOccurrences(titleLower, term);
+          countOccurrences(document.contentLower, term) +
+          TITLE_WEIGHT * countOccurrences(document.titleLower, term);
         if (hits === 0) allPresent = false;
         score += hits;
       }
       if (score === 0) continue;
       if (allPresent && terms.length > 1) score *= 2;
       results.push({
-        kind: candidate.kind,
-        file: candidate.file,
-        book: candidate.book,
-        book_title: candidate.book_title,
-        title: candidate.title,
-        snippet: makeSnippet(plainify(content), terms),
+        kind: document.kind,
+        file: document.file,
+        book: document.book,
+        book_title: document.book_title,
+        title: document.title,
+        snippet: makeSnippet(document.plainContent, terms),
         score,
-        log_file: candidate.log_file,
+        log_file: document.log_file,
       });
     }
     return results.sort((a, b) => b.score - a.score).slice(0, MAX_RESULTS);
@@ -500,5 +590,6 @@ export function createVaultService(
     readLogDetail,
     readAllLogs,
     search,
+    invalidate,
   };
 }
