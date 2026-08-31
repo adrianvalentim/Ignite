@@ -1,13 +1,13 @@
 [package]
-name = "effortful-learning"
+name = "ignite"
 version = "0.1.0"
-description = "Desktop tracker and local Codex client for an Effortful Learning workspace"
+description = "Desktop tracker and local Codex client for an Ignite learning workspace"
 authors = ["Adrian Valentim"]
 edition = "2021"
 rust-version = "1.86"
 
 [lib]
-name = "effortful_learning_lib"
+name = "ignite_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

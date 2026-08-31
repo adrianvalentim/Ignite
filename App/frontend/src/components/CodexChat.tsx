@@ -956,6 +956,9 @@ function ChatWelcome() {
       <blockquote className="font-display text-3xl leading-snug text-ink">
         The mind is not a vessel to be filled, but a fire to be kindled.
       </blockquote>
+      <cite className="mt-4 font-mono text-[10px] not-italic uppercase tracking-[0.24em] text-ink-dim">
+        Plutarch
+      </cite>
     </div>
   );
 }

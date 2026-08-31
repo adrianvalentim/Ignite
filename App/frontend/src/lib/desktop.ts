@@ -21,14 +21,20 @@ import {
 } from "@shared/vault";
 import { buildWorkspaceSnapshot } from "@shared/snapshot";
 
-const WORKSPACE_KEY = "effortful-learning.workspace";
+const WORKSPACE_KEY = "ignite.workspace";
+const LEGACY_WORKSPACE_KEY = "effortful-learning.workspace";
 const FRONTMATTER = /^---\s*\r?\n([\s\S]*?)\r?\n---\s*(?:\r?\n|$)/;
 
 export const isDesktopApp = (): boolean => isTauri();
 
 export function currentWorkspace(): string | null {
   if (!isDesktopApp()) return null;
-  return localStorage.getItem(WORKSPACE_KEY);
+  const workspace =
+    localStorage.getItem(WORKSPACE_KEY) ?? localStorage.getItem(LEGACY_WORKSPACE_KEY);
+  if (workspace && !localStorage.getItem(WORKSPACE_KEY)) {
+    localStorage.setItem(WORKSPACE_KEY, workspace);
+  }
+  return workspace;
 }
 
 let cachedRoot: string | null = null;

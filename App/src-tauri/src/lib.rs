@@ -31,7 +31,7 @@ pub fn run() {
 
                 if let Some(window) = app.get_webview_window("main") {
                     if let Err(error) = window.reload() {
-                        eprintln!("failed to reload Effortful Learning: {error}");
+                        eprintln!("failed to reload Ignite: {error}");
                     }
                 }
             }
@@ -49,5 +49,5 @@ pub fn run() {
             codex::codex_stop
         ])
         .run(tauri::generate_context!())
-        .expect("error while running Effortful Learning");
+        .expect("error while running Ignite");
 }

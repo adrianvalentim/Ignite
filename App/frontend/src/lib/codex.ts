@@ -202,8 +202,8 @@ class CodexClient {
       this.executable = started.executable;
       await this.request("initialize", {
         clientInfo: {
-          name: "effortful-learning",
-          title: "Effortful Learning",
+          name: "ignite",
+          title: "Ignite",
           version: "0.1.0",
         },
         capabilities: {

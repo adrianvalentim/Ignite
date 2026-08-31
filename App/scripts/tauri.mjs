@@ -16,7 +16,7 @@ const environment = {
   ...process.env,
   CARGO_TARGET_DIR:
     process.env.CARGO_TARGET_DIR ??
-    path.join(os.tmpdir(), "effortful-learning-tauri-target"),
+    path.join(os.tmpdir(), "ignite-tauri-target"),
 };
 
 function removeAppleDoubleFiles(directory) {

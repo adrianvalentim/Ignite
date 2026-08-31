@@ -1,4 +1,4 @@
-# Effortful Learning Example Workspace
+# Ignite Example Workspace
 
 This is a small synthetic workspace for public demos and parser fixtures. It
 mirrors the real `Learning/` structure without including private notes,

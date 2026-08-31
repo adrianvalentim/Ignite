@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Effortful Learning",
+  "productName": "Ignite",
   "version": "0.1.0",
   "identifier": "com.adrianvalentim.effortful-learning",
   "build": {
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Effortful Learning",
+        "title": "Ignite",
         "width": 1280,
         "height": 840,
         "minWidth": 900,

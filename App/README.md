@@ -1,6 +1,6 @@
-# Effortful Learning Tracker App
+# Ignite Tracker App
 
-This folder contains the tracker for an Effortful Learning workspace. The
+This folder contains the tracker for an Ignite learning workspace. The
 recommended interface is a Tauri 2 desktop app; the original local
 browser/server mode remains available. The desktop app also provides a Codex
 chat backed by the locally installed Codex CLI and the user's existing ChatGPT
@@ -29,7 +29,7 @@ An open window watches `books/` and `cross-book/`. When Codex, Claude Code, or
 another process updates a valid vault file, the current views silently reload.
 Changing app code during `desktop:dev` uses Vite's normal hot reload.
 
-On macOS, choose **Effortful Learning → Reload** or press **Cmd+R** to reload the
+On macOS, choose **Ignite → Reload** or press **Cmd+R** to reload the
 current interface on demand. Development mode will then request the latest Vite
 output. An installed production app must first be rebuilt and reinstalled before
 Reload can show changed bundled code.

@@ -1,8 +1,12 @@
-# Effortful Learning System
+# Ignite: An Effortful Learning System
 
-Effortful Learning is a filesystem-first study system for turning books into
+Ignite is a filesystem-first study system for turning books into
 durable understanding through interrogation, reconstruction, cards, synthesis,
 and review.
+
+> The mind is not a vessel to be filled, but a fire to be kindled.
+>
+> — Plutarch
 
 ## Public and Private Data
 
@@ -41,7 +45,7 @@ of `App/`.
 Run the browser/server mode against a private vault with:
 
 ```bash
-cd /path/to/effortful-learning-system
+cd /path/to/Ignite
 LEARNING_WORKSPACE="/path/to/private-repo/Learning" pnpm -C App dev
 ```
 

@@ -1,3 +1,3 @@
 fn main() {
-    effortful_learning_lib::run();
+    ignite_lib::run();
 }
