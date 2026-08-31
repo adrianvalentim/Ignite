@@ -4,73 +4,55 @@
 >
 > — Plutarch
 
-## Philosophy and purpose
+## Purpose
 
-Reading can create a convincing feeling of understanding while leaving little
-that can be explained, applied, or recalled later. Ignite is built around a
-different premise: durable learning comes from generating understanding, not
-merely receiving information.
+Reading often produces familiarity without recall or understanding. Ignite is
+a system for studying whole books through questions, explanation,
+reconstruction, and delayed recall.
 
-That means attempting an answer before seeing one, reconstructing an argument
-from memory, explaining why it works, testing its limits, connecting it to
-other ideas, and returning after enough time has passed for recall to become
-genuinely effortful.
+The learner answers before seeing the answer, reconstructs arguments from
+memory, tests their limits, and returns to them after time has passed. Difficulty
+shows whether an idea is missing, weak, confused, or mistaken. Feedback should
+address that specific problem.
 
-The effort is not punishment, and difficulty is not a goal in itself. The aim
-is useful struggle: enough resistance to reveal what is absent, fragile,
-confused, or distorted, followed by the right question or piece of feedback.
-Ignite treats those distinctions as evidence about learning rather than as
-scores of intelligence or motivation.
+AI asks questions and evaluates answers. It does not write the learner's
+reconstruction or read source material before the current phase permits it.
 
-AI has a deliberately constrained role in this process. It should not replace
-the learner's thinking with polished summaries or expose the answer too early.
-It should ask, listen, diagnose, challenge, and adapt—then help compare the
-learner's fixed reconstruction with the source. The learner remains the author
-of the understanding.
-
-Ignite exists to make this practice sustainable across whole books. It keeps
-the learning process visible, remembers where each idea stands, schedules
-return without turning study into a streak game, and preserves the learner's
-work as ordinary local files.
+Ignite records progress, schedules recall, and keeps the learner's work in
+local files.
 
 ## How Ignite works
 
-Each book is divided into conceptual segments. A segment moves through a
-deliberate learning pipeline:
+Each book is divided into conceptual segments. Each segment follows the same
+sequence:
 
-1. **Read independently.** Encounter the source before receiving an AI
-   explanation.
-2. **Interrogate.** Answer adaptive questions about mechanisms, examples,
-   boundaries, implications, and transfer.
-3. **Reconstruct.** Write the idea or argument from memory in your own words.
-4. **Review the reconstruction.** Fix the learner's version first, then compare
-   it with the source to find omissions and distortions.
-5. **Make and edit cards.** Turn the most valuable distinctions into prompts
-   for later retrieval.
-6. **Return for delayed recall.** Recall begins without the source. The app
-   derives when a segment is due from prior sessions, difficulty, and recorded
-   outcomes.
+1. **Read.** Meet the source before receiving an AI explanation.
+2. **Interrogate.** Answer questions about causes, examples, limits,
+   implications, and applications.
+3. **Reconstruct.** Write the argument from memory in your own words.
+4. **Review.** Save the reconstruction, then compare it with the source to find
+   omissions and errors.
+5. **Make cards.** Turn the important distinctions into retrieval prompts and
+   edit them yourself.
+6. **Recall later.** Begin without the source. Ignite calculates the next
+   review date from earlier sessions, difficulty, and outcomes.
 
-Targeted Feynman explanations can be used when an idea remains unclear, and a
-final examination can test synthesis across a completed book. Completion is
-not terminal: memory fades, so finished segments continue to return for
-retrieval.
+Feynman explanations address ideas that remain unclear. A final examination
+tests synthesis across the book. Completed segments still return for recall.
 
-### The app and the learning vault
+### App and vault
 
-Ignite has two intentionally separate parts:
+Ignite separates the learning files from the app:
 
-- The **learning vault** is the source of truth: readable Markdown files for
-  books, source material, reconstructions, cards, session logs, and cross-book
-  connections.
-- The **Ignite app** is a read-only view over that vault. It shows what needs
-  attention, where each book stands, what has been learned, and when recall is
-  due. It also provides a local Codex interface for guided learning sessions.
+- The **learning vault** holds books, sources, reconstructions, cards, session
+  logs, and cross-book connections as readable Markdown.
+- The **app** reads the vault and shows current work, book progress, session
+  history, and reviews. It also includes a local Codex interface for learning
+  sessions.
 
-There is no application database and no proprietary storage format. The app
-watches the selected vault and refreshes when its files change. The tracker
-itself cannot edit learning content; changes remain behind the learning agent's
-normal sandbox and approval flow.
+The app has no database and cannot write to the vault. It watches the selected
+folder and refreshes when files change. Codex runs separately, under its normal
+sandbox and approval rules.
 
 The interface includes:
 
@@ -80,33 +62,28 @@ The interface includes:
 - **Ledger** for effort, retention, stages, and recurring difficulty.
 - **Codex** for local, subscription-backed learning conversations.
 
-### Phase-specific AI guidance
+### AI instructions
 
-Ignite gives an AI agent only the instructions and evidence required for the
-current phase. Recall keeps the source out of context until unaided retrieval
-and follow-up questions are complete. Reconstruction review waits until the
-learner's reconstruction is fixed. Closing formats and persistence rules are
-loaded only when the teaching conversation ends.
+The agent loads one phase at a time, with only the evidence needed for that
+phase. During recall, it does not read the source until unaided recall and
+follow-up questions are finished. During reconstruction review, it reads the
+learner's saved version before the source. It loads file-writing rules only
+when the session ends.
 
-This progressive disclosure helps the agent protect source timing, avoid
-answer leakage, and respond to evidence from the learner's latest attempt.
+### Privacy and ownership
 
-### Local-first privacy and ownership
+Keep real study material in a private repository or local folder. The public
+repository contains the app, its instructions, and a synthetic example vault.
 
-The public app and the private learning vault are separate by design. Keep real
-study material in a private repository or local folder and point Ignite to it.
-The public repository contains only the application, operating instructions,
-and a synthetic example workspace.
-
-File ownership is explicit:
+Ownership is explicit:
 
 - Learners own reconstructions, theses, and essays.
 - Source material remains stable after setup.
 - AI-assisted sessions may maintain logs, cards, compact book state, and
   cross-book connections.
 
-Do not commit real study logs, copyrighted source text, PDFs, clippings,
-personal notes, or Obsidian state to this public repository.
+Do not commit study logs, copyrighted source text, PDFs, clippings, personal
+notes, or Obsidian state to this public repository.
 
 ## Run Ignite
 
@@ -121,7 +98,7 @@ pnpm -C App desktop:dev
 On first launch, choose the private `Learning` folder that contains `books/`.
 The selection is remembered across launches.
 
-The browser/server mode is also available:
+To run in a browser:
 
 ```bash
 LEARNING_WORKSPACE="/path/to/private/Learning" pnpm -C App dev
