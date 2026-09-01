@@ -24,6 +24,8 @@ dist/
 build/
 *.tsbuildinfo
 .vite/
+App/src-tauri/target/
+App/src-tauri/gen/schemas/
 
 # Editor / IDE
 .idea/

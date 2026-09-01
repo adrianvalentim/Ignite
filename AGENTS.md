@@ -1,6 +1,6 @@
 # Project Instructions
 
-This workspace is the Effortful Learning System. It contains two different
+This workspace is Ignite, an effortful learning system. It contains two different
 kinds of work. Route the request before loading detailed instructions.
 
 ## Learning Sessions

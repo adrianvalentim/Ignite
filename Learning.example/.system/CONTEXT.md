@@ -1,6 +1,6 @@
-# Effortful Learning System - Example Context
+# Ignite - Example Context
 
-This is the public demo workspace for the Effortful Learning System.
+This is the public demo workspace for Ignite, an effortful learning system.
 
 The workspace is the source of truth. Markdown files should be readable by a
 learner, local tools such as Obsidian, the tracker app, and CLI-based AI agents.

@@ -42,7 +42,7 @@ export function BookDetail({ slug, onClose, onOpenLog }: Props) {
         aria-label="Close"
         onClick={onClose}
         className="absolute inset-0 cursor-default"
-        style={{ background: "rgba(8, 6, 4, 0.6)", backdropFilter: "blur(2px)" }}
+        style={{ background: "var(--backdrop)", backdropFilter: "blur(2px)" }}
       />
       <aside
         className="fade-rise relative ml-auto h-full w-full max-w-4xl overflow-y-auto border-l border-line-strong"

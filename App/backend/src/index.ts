@@ -3,6 +3,7 @@ import cors from "@fastify/cors";
 import chokidar from "chokidar";
 import path from "node:path";
 import {
+  invalidateWorkspace,
   loadConfig,
   readAllBooks,
   readAllLogs,
@@ -11,6 +12,7 @@ import {
 } from "./workspace.js";
 import { buildToday } from "./schedule.js";
 import { buildStats } from "./stats.js";
+import { buildSnapshot } from "./snapshot.js";
 import { searchWorkspace } from "./search.js";
 
 const PORT = Number(process.env.PORT) || 3333;
@@ -41,6 +43,8 @@ app.get("/api/timeline", async () => {
   const logs = await readAllLogs(config.workspace_path);
   return { logs };
 });
+
+app.get("/api/snapshot", async () => buildSnapshot(config.workspace_path));
 
 app.get<{ Params: { slug: string; file: string } }>(
   "/api/books/:slug/logs/:file",
@@ -120,6 +124,7 @@ const watcher = chokidar.watch(
 
 let debounce: NodeJS.Timeout | null = null;
 watcher.on("all", (event, file) => {
+  invalidateWorkspace(config.workspace_path);
   if (debounce) clearTimeout(debounce);
   debounce = setTimeout(() => {
     broadcast("workspace-changed", { event, file });

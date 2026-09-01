@@ -1,61 +1,42 @@
-import { promises as fs } from "node:fs";
-import { existsSync } from "node:fs";
-import path from "node:path";
+import { existsSync, promises as fs } from "node:fs";
 import os from "node:os";
+import path from "node:path";
 import matter from "gray-matter";
 import { marked } from "marked";
-import type {
-  BookDetail,
-  BookMeta,
-  BookSummary,
-  LogDetail,
-  Segment,
-  SegmentStage,
-  SessionLog,
-} from "../../shared/types.js";
-
-const COMPLETED_STAGES: SegmentStage[] = ["complete"];
+import {
+  createVaultService,
+  type VaultReader,
+  type VaultService,
+} from "../../shared/vault.js";
 
 function resolveWorkspace(rawPath: string, baseDir = process.cwd()): string {
   if (rawPath.startsWith("~")) {
     return path.join(os.homedir(), rawPath.slice(1));
   }
-  if (!path.isAbsolute(rawPath)) {
-    return path.resolve(baseDir, rawPath);
-  }
+  if (!path.isAbsolute(rawPath)) return path.resolve(baseDir, rawPath);
   return rawPath;
 }
 
-async function loadWorkspaceConfig(configPath: string): Promise<{ workspace_path: string }> {
+async function loadWorkspaceConfig(
+  configPath: string,
+): Promise<{ workspace_path: string }> {
   const raw = await fs.readFile(configPath, "utf8");
-  const parsed = JSON.parse(raw);
+  const parsed = JSON.parse(raw) as { workspace_path?: unknown };
   const workspaceRoot = path.resolve(path.dirname(configPath), "..");
   const configuredPath =
-    typeof parsed.workspace_path === "string" ? parsed.workspace_path : workspaceRoot;
+    typeof parsed.workspace_path === "string"
+      ? parsed.workspace_path
+      : workspaceRoot;
   return { workspace_path: resolveWorkspace(configuredPath, workspaceRoot) };
 }
 
 export async function loadConfig(): Promise<{ workspace_path: string }> {
-  // Workspace resolution order:
-  //   1. LEARNING_WORKSPACE env override
-  //   2. private local ./Learning config
-  //   3. public ./Learning.example demo config
-  //   4. fallback ~/learning
   const envPath = process.env.LEARNING_WORKSPACE;
-  if (envPath) {
-    return { workspace_path: resolveWorkspace(envPath) };
-  }
+  if (envPath) return { workspace_path: resolveWorkspace(envPath) };
 
   const repoRoot = path.resolve(process.cwd(), "..", "..");
-  const privateConfig = path.join(
-    repoRoot,
-    "Learning",
-    ".system",
-    "config.json",
-  );
-  if (existsSync(privateConfig)) {
-    return loadWorkspaceConfig(privateConfig);
-  }
+  const privateConfig = path.join(repoRoot, "Learning", ".system", "config.json");
+  if (existsSync(privateConfig)) return loadWorkspaceConfig(privateConfig);
 
   const exampleConfig = path.join(
     repoRoot,
@@ -63,255 +44,99 @@ export async function loadConfig(): Promise<{ workspace_path: string }> {
     ".system",
     "config.json",
   );
-  if (existsSync(exampleConfig)) {
-    return loadWorkspaceConfig(exampleConfig);
-  }
+  if (existsSync(exampleConfig)) return loadWorkspaceConfig(exampleConfig);
 
-  // Fallback: ~/learning
   return { workspace_path: resolveWorkspace("~/learning") };
 }
 
-async function readMarkdown(absPath: string): Promise<{
-  data: Record<string, unknown>;
-  content: string;
-} | null> {
-  try {
-    const raw = await fs.readFile(absPath, "utf8");
-    const parsed = matter(raw);
-    return { data: parsed.data as Record<string, unknown>, content: parsed.content };
-  } catch {
-    return null;
-  }
-}
+function createNodeReader(workspace: string): VaultReader {
+  const root = path.resolve(workspace);
 
-function asString(v: unknown, fallback = ""): string {
-  if (typeof v === "string") return v;
-  if (v instanceof Date) return v.toISOString().slice(0, 10);
-  return fallback;
-}
-function asNumber(v: unknown, fallback = 0): number {
-  return typeof v === "number" && Number.isFinite(v) ? v : fallback;
-}
-
-function normaliseSegments(raw: unknown): Segment[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.map((s, i) => {
-    const obj = (s ?? {}) as Record<string, unknown>;
-    return {
-      id: asString(obj.id, String(i + 1).padStart(2, "0")),
-      slug: asString(obj.slug, `segment-${i + 1}`),
-      title: asString(obj.title, `Segment ${i + 1}`),
-      summary: asString(obj.summary),
-      stage: (asString(obj.stage, "unread") as SegmentStage),
-      difficulty: asNumber(obj.difficulty, 0),
-      sessions: asNumber(obj.sessions, 0),
-    };
-  });
-}
-
-function normaliseDifficultyMap(raw: unknown): Record<string, number> {
-  if (!raw || typeof raw !== "object") return {};
-  const out: Record<string, number> = {};
-  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
-    if (typeof v === "number") out[k] = v;
-  }
-  return out;
-}
-
-function normaliseOutcomes(raw: unknown): Record<string, number> | undefined {
-  if (!raw || typeof raw !== "object") return undefined;
-  const out: Record<string, number> = {};
-  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
-    if (typeof v === "number" && Number.isFinite(v)) {
-      out[k] = Math.min(1, Math.max(0, v));
+  function resolveRelative(relativePath: string): string {
+    const absolute = path.resolve(root, ...relativePath.split("/"));
+    if (absolute !== root && !absolute.startsWith(`${root}${path.sep}`)) {
+      throw new Error("Vault path escapes the selected workspace");
     }
+    return absolute;
   }
-  return Object.keys(out).length > 0 ? out : undefined;
-}
 
-function normaliseConnections(raw: unknown): BookMeta["connections"] {
-  if (!Array.isArray(raw)) return [];
-  return raw
-    .map((c) => {
-      const obj = (c ?? {}) as Record<string, unknown>;
+  return {
+    readText: (relativePath) => fs.readFile(resolveRelative(relativePath), "utf8"),
+    async readDir(relativePath) {
+      return (await fs.readdir(resolveRelative(relativePath), { withFileTypes: true })).map(
+        (entry) => ({
+          name: entry.name,
+          isFile: entry.isFile(),
+          isDirectory: entry.isDirectory(),
+        }),
+      );
+    },
+    async exists(relativePath) {
+      try {
+        await fs.access(resolveRelative(relativePath));
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    async size(relativePath) {
+      try {
+        const info = await fs.stat(resolveRelative(relativePath));
+        return info.isFile() ? info.size : null;
+      } catch {
+        return null;
+      }
+    },
+    parseMarkdown(raw) {
+      const parsed = matter(raw);
       return {
-        target_book: asString(obj.target_book),
-        description: asString(obj.description),
+        data: parsed.data as Record<string, unknown>,
+        content: parsed.content,
       };
-    })
-    .filter((c) => c.target_book.length > 0);
-}
-
-function parseBookMeta(data: Record<string, unknown>, slug: string): BookMeta {
-  return {
-    title: asString(data.title, slug),
-    author: asString(data.author),
-    slug: asString(data.slug, slug),
-    date_added: asString(data.date_added),
-    date_started: asString(data.date_started) || undefined,
-    date_completed: asString(data.date_completed) || undefined,
-    status: (asString(data.status, "queued") as BookMeta["status"]),
-    total_segments: asNumber(data.total_segments),
-    segments: normaliseSegments(data.segments),
-    difficulty_map: normaliseDifficultyMap(data.difficulty_map),
-    connections: normaliseConnections(data.connections),
-    cover: typeof data.cover === "string" ? data.cover : undefined,
-  };
-}
-
-async function listBookDirs(workspace: string): Promise<string[]> {
-  const booksDir = path.join(workspace, "books");
-  try {
-    const entries = await fs.readdir(booksDir, { withFileTypes: true });
-    return entries
-      .filter(
-        (e) =>
-          e.isDirectory() &&
-          !e.name.startsWith(".") &&
-          !e.name.startsWith("._"),
-      )
-      .map((e) => e.name);
-  } catch {
-    return [];
-  }
-}
-
-async function readSessionLogs(bookDir: string, slug: string): Promise<SessionLog[]> {
-  const logsDir = path.join(bookDir, "logs");
-  try {
-    const entries = await fs.readdir(logsDir, { withFileTypes: true });
-    const files = entries.filter(
-      (e) =>
-        e.isFile() &&
-        e.name.endsWith(".md") &&
-        !e.name.startsWith(".") &&
-        !e.name.startsWith("._"),
-    );
-    const logs: SessionLog[] = [];
-    for (const f of files) {
-      const md = await readMarkdown(path.join(logsDir, f.name));
-      if (!md) continue;
-      const data = md.data;
-      logs.push({
-        path: `logs/${f.name}`,
-        date: asString(data.date),
-        book: asString(data.book, slug),
-        segment: typeof data.segment === "string" ? data.segment : undefined,
-        type: asString(data.type, "session"),
-        duration_approx:
-          typeof data.duration_approx === "string" ? data.duration_approx : undefined,
-        summary: md.content.trim().slice(0, 400),
-        outcomes: normaliseOutcomes(data.outcomes),
-      });
-    }
-    return logs.sort((a, b) => (a.date < b.date ? 1 : -1));
-  } catch {
-    return [];
-  }
-}
-
-export async function readBookSummary(
-  workspace: string,
-  slug: string,
-): Promise<BookSummary | null> {
-  const bookDir = path.join(workspace, "books", slug);
-  const md = await readMarkdown(path.join(bookDir, "book.md"));
-  if (!md) return null;
-  const meta = parseBookMeta(md.data, slug);
-  const completed = meta.segments.filter((s) => COMPLETED_STAGES.includes(s.stage)).length;
-  const total = meta.total_segments || meta.segments.length;
-  const logs = await readSessionLogs(bookDir, slug);
-  return {
-    ...meta,
-    progress: {
-      completed,
-      total,
-      last_active: logs[0]?.date,
+    },
+    async renderMarkdown(markdown) {
+      const html = await marked.parse(markdown);
+      return typeof html === "string" ? html : "";
     },
   };
 }
 
-export async function readBookDetail(
-  workspace: string,
-  slug: string,
-): Promise<BookDetail | null> {
-  const bookDir = path.join(workspace, "books", slug);
-  const md = await readMarkdown(path.join(bookDir, "book.md"));
-  if (!md) return null;
-  const meta = parseBookMeta(md.data, slug);
-  const completed = meta.segments.filter((s) => COMPLETED_STAGES.includes(s.stage)).length;
-  const total = meta.total_segments || meta.segments.length;
-  const logs = await readSessionLogs(bookDir, slug);
-  const body_html = await marked.parse(md.content);
-  const has_thesis = existsSync(path.join(bookDir, "thesis.md"));
-  const has_essay = existsSync(path.join(bookDir, "essay.md"));
-  return {
-    ...meta,
-    progress: {
-      completed,
-      total,
-      last_active: logs[0]?.date,
-    },
-    body_html: typeof body_html === "string" ? body_html : "",
-    logs,
-    has_thesis,
-    has_essay,
-  };
+const services = new Map<string, VaultService>();
+
+export function serviceFor(workspace: string): VaultService {
+  const key = path.resolve(workspace);
+  let service = services.get(key);
+  if (!service) {
+    service = createVaultService(createNodeReader(key));
+    services.set(key, service);
+  }
+  return service;
 }
 
-export async function readAllBooks(workspace: string): Promise<BookSummary[]> {
-  const slugs = await listBookDirs(workspace);
-  const out: BookSummary[] = [];
-  for (const slug of slugs) {
-    const s = await readBookSummary(workspace, slug);
-    if (s) out.push(s);
-  }
-  return out;
+export function invalidateWorkspace(workspace: string) {
+  services.get(path.resolve(workspace))?.invalidate();
 }
 
-const SLUG_RE = /^[a-z0-9][a-z0-9-]*$/i;
-const LOG_FILE_RE = /^[a-z0-9][a-z0-9._-]*\.md$/i;
-
-export async function readLogDetail(
-  workspace: string,
-  slug: string,
-  file: string,
-): Promise<LogDetail | null> {
-  // Both parts come straight from the URL — refuse anything that could
-  // escape the book's logs directory.
-  if (!SLUG_RE.test(slug) || !LOG_FILE_RE.test(file) || file.includes("..")) {
-    return null;
-  }
-  const logsDir = path.join(workspace, "books", slug, "logs");
-  const absPath = path.resolve(logsDir, file);
-  if (!absPath.startsWith(path.resolve(logsDir) + path.sep)) return null;
-
-  const md = await readMarkdown(absPath);
-  if (!md) return null;
-  const data = md.data;
-  const body_html = await marked.parse(md.content);
-  const bookMd = await readMarkdown(path.join(workspace, "books", slug, "book.md"));
-  return {
-    path: `logs/${file}`,
-    date: asString(data.date),
-    book: asString(data.book, slug),
-    book_title: bookMd ? asString(bookMd.data.title, slug) : undefined,
-    segment: typeof data.segment === "string" ? data.segment : undefined,
-    type: asString(data.type, "session"),
-    duration_approx:
-      typeof data.duration_approx === "string" ? data.duration_approx : undefined,
-    summary: md.content.trim().slice(0, 400),
-    outcomes: normaliseOutcomes(data.outcomes),
-    body_html: typeof body_html === "string" ? body_html : "",
-  };
+export function readBookSummary(workspace: string, slug: string) {
+  return serviceFor(workspace).readBookSummary(slug);
 }
 
-export async function readAllLogs(workspace: string): Promise<SessionLog[]> {
-  const slugs = await listBookDirs(workspace);
-  const all: SessionLog[] = [];
-  for (const slug of slugs) {
-    const logs = await readSessionLogs(path.join(workspace, "books", slug), slug);
-    all.push(...logs);
-  }
-  return all.sort((a, b) => (a.date < b.date ? 1 : -1));
+export function readBookDetail(workspace: string, slug: string) {
+  return serviceFor(workspace).readBookDetail(slug);
+}
+
+export function readAllBooks(workspace: string) {
+  return serviceFor(workspace).readAllBooks();
+}
+
+export function readWorkspaceData(workspace: string) {
+  return serviceFor(workspace).readWorkspaceData();
+}
+
+export function readLogDetail(workspace: string, slug: string, file: string) {
+  return serviceFor(workspace).readLogDetail(slug, file);
+}
+
+export function readAllLogs(workspace: string) {
+  return serviceFor(workspace).readAllLogs();
 }

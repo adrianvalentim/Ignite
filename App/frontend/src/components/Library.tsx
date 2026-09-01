@@ -41,7 +41,7 @@ export function Library({ books, onOpen }: Props) {
       <header className="mb-12 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="font-mono text-[11px] uppercase tracking-[0.32em] text-ink-dim">
-            Effortful Learning
+            Ignite
           </div>
           <h1
             className="font-display mt-2 text-[clamp(2.2rem,4vw,3.4rem)] leading-[1.02] text-ink"

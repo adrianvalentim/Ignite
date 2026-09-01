@@ -1,3 +1,4 @@
+@import "./assets/fonts/fonts.css";
 @import "tailwindcss";
 
 /* ------------------------------------------------------------------
@@ -43,6 +44,10 @@
   --backdrop: rgba(8, 6, 4, 0.6);
   --grain-blend: overlay;
   --grain-opacity: 0.35;
+  --paper-grain-opacity: 0.22;
+  --scrollbar-thumb: var(--color-line-strong);
+  --stage-complete: #7c9a52;
+  --stage-seal: #15110d;
   --vignette-top: rgba(201, 147, 58, 0.06);
   --vignette-bottom: rgba(0, 0, 0, 0.45);
   color-scheme: dark;
@@ -50,36 +55,40 @@
 
 /* -------- Daylight palette --------------------------------------- */
 :root[data-theme="light"] {
-  --color-bg: #ede2c4;
-  --color-bg-elev: #f3ead6;
-  --color-bg-deep: #e1d3b0;
-  --color-paper: #faf3df;
-  --color-paper-deep: #ede2c4;
-  --color-ink: #2a1f15;
-  --color-ink-soft: #5a4a36;
-  --color-ink-dim: #8b7a60;
-  --color-ink-paper: #2a1f15;
-  --color-line: #d6c7a4;
-  --color-line-strong: #b8a47e;
-  --color-amber: #9a6a1f;
-  --color-amber-soft: #c9933a;
-  --color-green: #4a6230;
-  --color-green-soft: #5e7a3d;
-  --color-slate-blue: #3f5c70;
-  --color-slate-blue-soft: #5b7a8c;
-  --color-rust: #8c4a2e;
+  --color-bg: #f3f3f1;
+  --color-bg-elev: #fbf8f1;
+  --color-bg-deep: #eee7d6;
+  --color-paper: #fffdf8;
+  --color-paper-deep: #f0ebe1;
+  --color-ink: #1a1813;
+  --color-ink-soft: #5e5950;
+  --color-ink-dim: #6f6a62;
+  --color-ink-paper: #1a1813;
+  --color-line: rgba(26, 24, 19, 0.09);
+  --color-line-strong: rgba(26, 24, 19, 0.17);
+  --color-amber: #a44a26;
+  --color-amber-soft: #c47a58;
+  --color-green: #3f6b48;
+  --color-green-soft: #6f8d75;
+  --color-slate-blue: #3f6376;
+  --color-slate-blue-soft: #718995;
+  --color-rust: #a73525;
 
-  --shadow-card: 0 1px 0 0 rgba(255, 248, 224, 0.6) inset,
-    0 14px 28px -16px rgba(58, 30, 12, 0.18),
-    0 4px 8px -4px rgba(58, 30, 12, 0.10);
-  --shadow-card-hover: 0 1px 0 0 rgba(255, 248, 224, 0.7) inset,
-    0 22px 36px -18px rgba(58, 30, 12, 0.22),
-    0 6px 14px -6px rgba(58, 30, 12, 0.14);
-  --backdrop: rgba(48, 34, 16, 0.22);
+  --shadow-card: 0 1px 0 0 rgba(255, 255, 255, 0.88) inset,
+    0 18px 42px -30px rgba(26, 24, 19, 0.34),
+    0 3px 9px -6px rgba(26, 24, 19, 0.2);
+  --shadow-card-hover: 0 1px 0 0 rgba(255, 255, 255, 0.96) inset,
+    0 24px 52px -30px rgba(26, 24, 19, 0.4),
+    0 5px 14px -7px rgba(26, 24, 19, 0.24);
+  --backdrop: rgba(26, 24, 19, 0.26);
   --grain-blend: multiply;
-  --grain-opacity: 0.18;
-  --vignette-top: rgba(201, 147, 58, 0.10);
-  --vignette-bottom: rgba(58, 30, 12, 0.08);
+  --grain-opacity: 0.1;
+  --paper-grain-opacity: 0.08;
+  --scrollbar-thumb: rgba(26, 24, 19, 0.22);
+  --stage-complete: var(--color-green);
+  --stage-seal: var(--color-paper);
+  --vignette-top: rgba(255, 255, 255, 0.46);
+  --vignette-bottom: rgba(26, 24, 19, 0.025);
   color-scheme: light;
 }
 
@@ -142,7 +151,7 @@ body::before {
   height: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-line-strong);
+  background: var(--scrollbar-thumb);
   border-radius: 6px;
 }
 ::-webkit-scrollbar-track {
@@ -174,7 +183,7 @@ body::before {
 }
 .grain-paper::after {
   mix-blend-mode: multiply;
-  opacity: 0.22;
+  opacity: var(--paper-grain-opacity);
 }
 
 /* Smooth theme transition on the canvas. */

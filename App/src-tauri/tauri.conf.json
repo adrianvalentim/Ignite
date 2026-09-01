@@ -1,0 +1,38 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Ignite",
+  "version": "0.1.0",
+  "identifier": "com.adrianvalentim.effortful-learning",
+  "build": {
+    "beforeDevCommand": "pnpm -C frontend dev",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "pnpm -C frontend build",
+    "frontendDist": "../frontend/dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Ignite",
+        "width": 1280,
+        "height": 840,
+        "minWidth": 900,
+        "minHeight": 600,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src 'self' ipc: http://ipc.localhost; img-src 'self' asset: http://asset.localhost data: https:; style-src 'self' 'unsafe-inline'; font-src 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "Education",
+    "shortDescription": "A learning tracker with local Codex chat",
+    "macOS": {
+      "minimumSystemVersion": "10.15"
+    }
+  }
+}

@@ -1,14 +1,21 @@
 {
-  "name": "effortful-learning-app",
+  "name": "ignite-app",
   "private": true,
   "version": "0.1.0",
-  "description": "Local viewer for the Effortful Learning workspace.",
+  "type": "module",
+  "description": "Local viewer for an Ignite learning workspace.",
   "scripts": {
-    "install:all": "pnpm -C backend install && pnpm -C frontend install",
+    "install:all": "pnpm install",
     "dev": "concurrently -n bk,fe -c yellow,cyan \"pnpm -C backend dev\" \"pnpm -C frontend dev\"",
-    "build": "pnpm -C frontend build"
+    "build": "pnpm -C frontend build",
+    "check": "pnpm -C backend test && pnpm -C frontend build && pnpm desktop:check",
+    "desktop:dev": "node scripts/tauri.mjs dev",
+    "desktop:build": "node scripts/tauri.mjs build",
+    "desktop:check": "node scripts/tauri.mjs check",
+    "desktop:info": "node scripts/tauri.mjs info"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0",
     "concurrently": "^9.1.0"
   }
 }

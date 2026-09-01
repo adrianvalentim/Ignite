@@ -91,7 +91,7 @@ export function Timeline({ books, logs, onOpen, onOpenLog }: Props) {
     <div className="fade-rise mx-auto w-full max-w-3xl px-8 pt-20 pb-14 sm:px-12 sm:pt-24">
       <header className="mb-10">
         <div className="font-mono text-[11px] uppercase tracking-[0.32em] text-ink-dim">
-          Effortful Learning
+          Ignite
         </div>
         <h1
           className="font-display mt-2 text-[clamp(2.2rem,4vw,3.4rem)] leading-[1.02] text-ink"
@@ -99,9 +99,6 @@ export function Timeline({ books, logs, onOpen, onOpenLog }: Props) {
         >
           The Chronicle
         </h1>
-        <p className="mt-3 max-w-lg text-[14.5px] leading-relaxed text-ink-soft">
-          A record of effort across weeks and months. Not a streak. A story.
-        </p>
       </header>
 
       <StatsFrieze stats={stats} />

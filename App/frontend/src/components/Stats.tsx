@@ -24,12 +24,12 @@ const STAGE_ORDER: SegmentStage[] = [
 ];
 
 const STAGE_COLOR: Record<SegmentStage, string> = {
-  unread: "#6b5d4d",
-  read: "#b6ac95",
-  interrogated: "#5b7a8c",
-  reconstructed: "#c9933a",
-  carded: "#c9933a",
-  complete: "#7c9a52",
+  unread: "var(--color-ink-dim)",
+  read: "var(--color-ink-soft)",
+  interrogated: "var(--color-slate-blue)",
+  reconstructed: "var(--color-amber)",
+  carded: "var(--color-amber)",
+  complete: "var(--stage-complete)",
 };
 
 export function Stats({ stats, books, onOpen }: Props) {
@@ -37,7 +37,7 @@ export function Stats({ stats, books, onOpen }: Props) {
     <div className="fade-rise mx-auto w-full max-w-3xl px-8 pt-20 pb-14 sm:px-12 sm:pt-24">
       <header className="mb-10">
         <div className="font-mono text-[11px] uppercase tracking-[0.32em] text-ink-dim">
-          Effortful Learning
+          Ignite
         </div>
         <h1
           className="font-display mt-2 text-[clamp(2.2rem,4vw,3.4rem)] leading-[1.02] text-ink"
@@ -45,9 +45,6 @@ export function Stats({ stats, books, onOpen }: Props) {
         >
           The Ledger
         </h1>
-        <p className="mt-3 max-w-lg text-[14.5px] leading-relaxed text-ink-soft">
-          Effort and retention, measured over time.
-        </p>
       </header>
 
       <TotalsFrieze totals={stats.totals} />

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="room" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#241a13"/>
+      <stop offset="1" stop-color="#0f0c09"/>
+    </linearGradient>
+    <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7edd5"/>
+      <stop offset="1" stop-color="#dbc99f"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="210" fill="url(#room)"/>
+  <circle cx="512" cy="505" r="337" fill="none" stroke="#c9933a" stroke-width="18" opacity=".5"/>
+  <path d="M220 315c112-35 210-12 292 69 82-81 180-104 292-69v420c-112-35-210-12-292 69-82-81-180-104-292-69V315Z" fill="url(#paper)" stroke="#c9933a" stroke-width="24" stroke-linejoin="round"/>
+  <path d="M512 386v417" fill="none" stroke="#9a6a1f" stroke-width="20"/>
+  <path d="M286 401c65-13 119 0 166 38M286 487c65-13 119 0 166 38M286 573c65-13 119 0 166 38M738 401c-65-13-119 0-166 38M738 487c-65-13-119 0-166 38M738 573c-65-13-119 0-166 38" fill="none" stroke="#8a6428" stroke-width="17" stroke-linecap="round" opacity=".8"/>
+</svg>

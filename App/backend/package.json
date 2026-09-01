@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "test": "pnpm build && node --test test/vault.test.mjs",
+    "start": "node dist/backend/src/index.js"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.1",

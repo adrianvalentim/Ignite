@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import type {
-  BookSummary,
-  SessionLog,
-  StatsPayload,
-  TodayPayload,
-} from "../../shared/types";
+import type { WorkspaceSnapshot } from "../../shared/types";
+import { createRefreshCoordinator } from "../../shared/refresh";
 import { api, subscribeWorkspace } from "./lib/api";
+import {
+  chooseWorkspace,
+  currentWorkspace,
+  isDesktopApp,
+} from "./lib/desktop";
 import { useTheme } from "./lib/theme";
 import { persistView, readInitialView, type View } from "./lib/view";
 import { Today } from "./components/Today";
@@ -18,12 +19,16 @@ import { LogModal, type LogRef } from "./components/LogModal";
 import { SearchOverlay } from "./components/SearchOverlay";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { ViewSwitcher } from "./components/ViewSwitcher";
+import { CodexChat } from "./components/CodexChat";
 
 export default function App() {
-  const [books, setBooks] = useState<BookSummary[] | null>(null);
-  const [logs, setLogs] = useState<SessionLog[]>([]);
-  const [today, setToday] = useState<TodayPayload | null>(null);
-  const [stats, setStats] = useState<StatsPayload | null>(null);
+  const desktop = isDesktopApp();
+  const [workspacePath, setWorkspacePath] = useState<string | null>(() =>
+    currentWorkspace(),
+  );
+  const [choosingWorkspace, setChoosingWorkspace] = useState(false);
+  const [workspaceError, setWorkspaceError] = useState<string | null>(null);
+  const [snapshot, setSnapshot] = useState<WorkspaceSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [openSlug, setOpenSlug] = useState<string | null>(null);
   const [openLog, setOpenLog] = useState<LogRef | null>(null);
@@ -36,22 +41,58 @@ export default function App() {
     persistView(next);
   }, []);
 
-  const load = useCallback(() => {
-    Promise.all([api.books(), api.timeline(), api.today(), api.stats()])
-      .then(([b, l, t, s]) => {
-        setBooks(b);
-        setLogs(l);
-        setToday(t);
-        setStats(s);
-      })
-      .catch((e) => setError(String(e)));
+  const selectWorkspace = useCallback(async () => {
+    setChoosingWorkspace(true);
+    setWorkspaceError(null);
+    try {
+      const selected = await chooseWorkspace();
+      if (selected) {
+        setSnapshot(null);
+        setError(null);
+        setWorkspacePath(selected);
+      }
+    } catch (selectionError) {
+      setWorkspaceError(String(selectionError));
+    } finally {
+      setChoosingWorkspace(false);
+    }
   }, []);
 
   useEffect(() => {
-    load();
-    const off = subscribeWorkspace(load);
-    return off;
-  }, [load]);
+    if (desktop && !workspacePath) return undefined;
+    let disposed = false;
+    let unsubscribe: (() => void) | null = null;
+    const subscriptionAbort = new AbortController();
+    const refresh = createRefreshCoordinator({
+      load: () => api.snapshot(),
+      onSuccess: (nextSnapshot) => {
+        setError(null);
+        setSnapshot(nextSnapshot);
+      },
+      onError: (loadError) => setError(String(loadError)),
+    });
+
+    void subscribeWorkspace(refresh.request, subscriptionAbort.signal)
+      .then((stop) => {
+        if (disposed) {
+          stop();
+          return;
+        }
+        unsubscribe = stop;
+        refresh.request();
+      })
+      .catch((subscriptionError: unknown) => {
+        console.error("Could not subscribe to workspace changes", subscriptionError);
+        if (!disposed) refresh.request();
+      });
+
+    return () => {
+      disposed = true;
+      subscriptionAbort.abort();
+      refresh.dispose();
+      unsubscribe?.();
+    };
+  }, [desktop, workspacePath]);
 
   const openLogFile = useCallback((book: string, file: string) => {
     setOpenLog({ book, file });
@@ -69,38 +110,66 @@ export default function App() {
     return () => document.removeEventListener("keydown", onKey);
   }, []);
 
+  if (desktop && !workspacePath) {
+    return (
+      <>
+        <ThemeToggle theme={theme} onToggle={toggleTheme} />
+        <WorkspaceSetup
+          choosing={choosingWorkspace}
+          error={workspaceError}
+          onChoose={selectWorkspace}
+        />
+      </>
+    );
+  }
+
   return (
     <>
       <ViewSwitcher
         view={view}
         onChange={changeView}
         onSearch={() => setSearchOpen(true)}
+        workspacePath={desktop ? workspacePath : null}
+        choosingWorkspace={choosingWorkspace}
+        onChooseWorkspace={desktop ? selectWorkspace : undefined}
       />
       <ThemeToggle theme={theme} onToggle={toggleTheme} />
-      {error ? (
-        <FullError error={error} />
-      ) : !books ? (
+      {view === "chat" ? (
+        <CodexChat workspacePath={workspacePath} />
+      ) : error ? (
+        <FullError
+          error={error}
+          desktop={desktop}
+          onChoose={desktop ? selectWorkspace : undefined}
+        />
+      ) : !snapshot ? (
         <FullLoading />
       ) : (
         <>
-          {view === "today" &&
-            (today ? <Today today={today} onOpen={setOpenSlug} /> : <FullLoading />)}
-          {view === "library" && <Library books={books} onOpen={setOpenSlug} />}
-          {view === "kanban" && <Kanban books={books} onOpen={setOpenSlug} />}
+          {view === "today" && (
+            <Today today={snapshot.today} onOpen={setOpenSlug} />
+          )}
+          {view === "library" && (
+            <Library books={snapshot.books} onOpen={setOpenSlug} />
+          )}
+          {view === "kanban" && (
+            <Kanban books={snapshot.books} onOpen={setOpenSlug} />
+          )}
           {view === "timeline" && (
             <Timeline
-              books={books}
-              logs={logs}
+              books={snapshot.books}
+              logs={snapshot.logs}
               onOpen={setOpenSlug}
               onOpenLog={openLogFile}
             />
           )}
-          {view === "stats" &&
-            (stats ? (
-              <Stats stats={stats} books={books} onOpen={setOpenSlug} />
-            ) : (
-              <FullLoading />
-            ))}
+          {view === "stats" && (
+            <Stats
+              stats={snapshot.stats}
+              books={snapshot.books}
+              onOpen={setOpenSlug}
+            />
+          )}
           {openSlug && (
             <BookDetail
               slug={openSlug}
@@ -122,6 +191,52 @@ export default function App() {
   );
 }
 
+function WorkspaceSetup({
+  choosing,
+  error,
+  onChoose,
+}: {
+  choosing: boolean;
+  error: string | null;
+  onChoose: () => void;
+}) {
+  return (
+    <main className="flex h-full items-center justify-center px-8">
+      <section className="grain grain-paper w-full max-w-xl overflow-hidden rounded-sm border border-line-strong bg-paper px-10 py-12 text-ink-paper shadow-2xl">
+        <div className="relative z-10">
+          <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-amber">
+            First launch
+          </p>
+          <h1
+            className="mt-4 font-display text-4xl leading-tight"
+            style={{ fontVariationSettings: '"opsz" 72, "wght" 390' }}
+          >
+            Open your Learning workspace.
+          </h1>
+          <p className="mt-4 max-w-md text-[15px] leading-relaxed text-ink-soft">
+            Choose the folder that contains your books. The app receives read-only
+            access, keeps the vault outside the application, and refreshes when an
+            agent updates its files.
+          </p>
+          <button
+            type="button"
+            disabled={choosing}
+            onClick={onChoose}
+            className="mt-8 rounded-sm bg-ink-paper px-5 py-3 font-mono text-[11px] uppercase tracking-[0.18em] text-paper transition-opacity hover:opacity-85 disabled:cursor-wait disabled:opacity-50"
+          >
+            {choosing ? "Opening…" : "Choose workspace"}
+          </button>
+          {error && (
+            <p className="mt-5 rounded-sm border border-rust/30 bg-rust/10 p-3 font-mono text-[11px] leading-relaxed text-rust">
+              {error}
+            </p>
+          )}
+        </div>
+      </section>
+    </main>
+  );
+}
+
 function FullLoading() {
   return (
     <div className="flex h-full items-center justify-center">
@@ -132,7 +247,15 @@ function FullLoading() {
   );
 }
 
-function FullError({ error }: { error: string }) {
+function FullError({
+  error,
+  desktop,
+  onChoose,
+}: {
+  error: string;
+  desktop: boolean;
+  onChoose?: () => void;
+}) {
   return (
     <div className="mx-auto max-w-xl px-8 py-24">
       <h1
@@ -142,9 +265,27 @@ function FullError({ error }: { error: string }) {
         The workspace is silent.
       </h1>
       <p className="mt-3 text-[14.5px] leading-relaxed text-ink-soft">
-        The backend could not be reached. Start it with{" "}
-        <span className="font-mono text-[12.5px] text-ink-dim">pnpm -C backend dev</span>.
+        {desktop ? (
+          "The selected workspace could not be read. You can choose it again without changing any learning files."
+        ) : (
+          <>
+            The backend could not be reached. Start it with{" "}
+            <span className="font-mono text-[12.5px] text-ink-dim">
+              pnpm -C backend dev
+            </span>
+            .
+          </>
+        )}
       </p>
+      {onChoose && (
+        <button
+          type="button"
+          onClick={onChoose}
+          className="mt-6 rounded-sm border border-line-strong px-4 py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-soft hover:text-ink"
+        >
+          Choose another workspace
+        </button>
+      )}
       <pre className="mt-6 overflow-auto rounded-sm border border-line-strong p-4 font-mono text-[11.5px] text-ink-dim">
         {error}
       </pre>
